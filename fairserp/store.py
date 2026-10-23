@@ -124,8 +124,15 @@ class MemoryStore:
 
 
 class RedisStore:
-    def __init__(self, url: str | None = None, client: redis.Redis | None = None) -> None:
-        self._redis = client or redis.from_url(url, decode_responses=True)
+    def __init__(self, url: str | None = None, client: redis.Redis | None = None,
+                 max_connections: int = 50) -> None:
+        if client is None:
+            # A blocking pool waits for a free connection instead of raising
+            # MaxConnectionsError when a burst of requests exceeds the pool size.
+            pool = redis.BlockingConnectionPool.from_url(
+                url, max_connections=max_connections, timeout=5, decode_responses=True)
+            client = redis.Redis(connection_pool=pool)
+        self._redis = client
 
     async def get_json(self, key: str) -> Any | None:
         value = await self._redis.get(key)
@@ -166,9 +173,10 @@ class RedisStore:
         await self._redis.aclose()
 
 
-def create_store(backend: str, max_entries: int | None = None) -> MemoryStore | RedisStore:
+def create_store(backend: str, max_entries: int | None = None,
+                 max_connections: int = 50) -> MemoryStore | RedisStore:
     if backend.startswith(("redis://", "rediss://")):
-        return RedisStore(backend)
+        return RedisStore(backend, max_connections=max_connections)
     if backend != "memory":
         raise ValueError(f"Unsupported store backend: {backend!r}")
     return MemoryStore(max_entries)

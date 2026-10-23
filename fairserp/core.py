@@ -263,8 +263,7 @@ class Searcher:
             await self.breaker.record(engine.name, error)
             return self._failed(fragment, error, started)
         except EngineError as error:
-            if fragment.budget is not None or error.kind != ErrorKind.RATE_LIMITED:
-                await self.breaker.record(engine.name, error)
+            await self.breaker.record(engine.name, error)
             return self._failed(fragment, error, started)
         await self.breaker.record(engine.name, None)
         report.latency_ms = int((time.monotonic() - started) * 1000)
@@ -290,6 +289,7 @@ class Searcher:
     def _failed(self, fragment: Fragment, error: EngineError, started: float) -> Fragment:
         status = {
             ErrorKind.RATE_LIMITED: ProviderStatus.RATE_LIMITED,
+            ErrorKind.THROTTLED: ProviderStatus.RATE_LIMITED,
             ErrorKind.TIMEOUT: ProviderStatus.TIMEOUT,
         }.get(error.kind, ProviderStatus.FAILED)
         fragment.report.status = status

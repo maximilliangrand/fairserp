@@ -104,6 +104,8 @@ def translate(params: dict[str, str], aliases: dict[str, str], known: set[str],
     if params.get("location"):
         values["location"] = params["location"]
     if params.get("fairserp_mode"):
+        if params["fairserp_mode"] not in {m.value for m in Mode}:
+            raise SerpApiParamError("Invalid `fairserp_mode`; use fast, research or private.")
         values["mode"] = Mode(params["fairserp_mode"])
     values["strict_params"] = params.get("fairserp_strict", str(strict_default)).lower() in (
         "1", "true")

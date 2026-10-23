@@ -53,12 +53,13 @@ class Services:
 def create_app(settings: Settings | None = None,
                registry: dict[str, Engine] | None = None) -> FastAPI:
     settings = settings or get_settings()
-    logs.install(hide_queries=not settings.log_queries)
+    logs.install(hide_queries=not settings.log_queries, secrets=settings.secret_values())
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
-        cache = create_store(settings.cache_backend, settings.cache_max_entries)
-        state = create_store(settings.state_backend)
+        cache = create_store(settings.cache_backend, settings.cache_max_entries,
+                             settings.redis_max_connections)
+        state = create_store(settings.state_backend, None, settings.redis_max_connections)
         http = HttpPool(settings)
         engines = registry if registry is not None else build_registry()
         app.state.services = Services(
@@ -129,7 +130,7 @@ def authenticate(request: Request) -> str:
     key = header[7:].strip() if header.lower().startswith("bearer ") else None
     key = key or request.query_params.get("api_key") or request.query_params.get("serp_api_key")
     if services.settings.auth_disabled:
-        return key or "anonymous"
+        return "anonymous"
     if not key or key not in services.settings.parsed_api_keys():
         raise ApiError(401, "Invalid API key. Send it as 'Authorization: Bearer <key>'; keys "
                             "are configured in FAIRSERP_API_KEYS.", "invalid_api_key")
@@ -246,7 +247,8 @@ async def _serpapi_search(request: Request, output: str | None) -> Response:
         raise ApiError(exc.status, str(exc)) from exc
 
     truthy = {"true", "1"}
-    context = {"params": params, "ignored": translation.ignored}
+    stored_params = {k: v for k, v in params.items() if k not in ("api_key", "serp_api_key")}
+    context = {"params": stored_params, "ignored": translation.ignored}
     execution = await execute(
         services, translation.query, translation.requested_engine, api_key, context,
         run_async=params.get("async", "").lower() in truthy,
@@ -292,6 +294,11 @@ async def _serpapi_archive(request: Request, path: str) -> Response:
     last = path.rstrip("/").split("/")[-1]
     search_id, _, ext = last.partition(".")
     output = ext or request.query_params.get("output", "json")
+    if request.query_params.get("json_restrictor"):
+        try:
+            restrictor.validate(request.query_params["json_restrictor"])
+        except restrictor.RestrictorError as exc:
+            raise ApiError(400, str(exc)) from exc
     record = await services.archive.load(search_id)
     if record is None or (not services.settings.auth_disabled
                           and record["owner"] != owner_id(api_key)):
@@ -400,10 +407,17 @@ def _register(app: FastAPI) -> None:
         if not q.strip():
             raise ApiError(400, "Missing query `q` parameter.")
         try:
+            reservation = await services.quotas.reserve(api_key,
+                                                        _limits(api_key, services.settings))
+        except QuotaExceeded as exc:
+            raise ApiError(429, exc.message, "quota_exceeded", exc.retry_after) from exc
+        try:
             return await locations.search(q.strip(), max(1, min(limit, 10)),
                                           services.searcher.ctx, services.cache)
         except EngineError as exc:
-            raise ApiError(502 if exc.kind != "rate_limited" else 429, exc.message,
+            await services.quotas.release(reservation)
+            limited = exc.kind in ("rate_limited", "throttled")
+            raise ApiError(429 if limited else 502, exc.message,
                            retry_after=exc.retry_after) from exc
 
     @app.get("/v1/engines", tags=["native"], summary="Engines, rights and policy status")

@@ -1,41 +1,58 @@
-"""Log redaction. Query strings are parsed (so encoded names like ``api%5fkey`` are caught)
-and secret values are replaced before any handler formats the record."""
+"""Log redaction.
+
+Applied to uvicorn's access and error logs, httpx/httpcore and fairserp's own logger:
+- query strings are parsed (so encoded names like ``api%5fkey`` are caught) and secret
+  values replaced; everything after the first ``?`` counts, including a raw ``#``;
+- ``q`` is redacted when the request carries ``zero_trace=true`` (or always, when query
+  logging is off);
+- configured secret values (provider keys, which can sit in a URL path, and client API
+  keys) are replaced wherever they appear;
+- non-string arguments such as ``httpx.URL`` are converted before redaction.
+"""
 
 import logging
 import re
-from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
+from urllib.parse import parse_qsl, urlencode
 
 SECRET_PARAMS = {"api_key", "serp_api_key", "key", "token", "access_token"}
-_QUERY_IN_TEXT = re.compile(r"(https?://\S+|/\S*\?\S+)")
+_URLISH = re.compile(r"(?:https?://|/)\S*\?\S*")
+MIN_SECRET_LENGTH = 6
 
 
 def redact_url(url: str, hide_query: bool = False) -> str:
-    parts = urlsplit(url)
-    if not parts.query:
+    base, sep, query = url.partition("?")
+    if not sep:
         return url
-    pairs = parse_qsl(parts.query, keep_blank_values=True)
+    pairs = parse_qsl(query, keep_blank_values=True)
     zero_trace = any(k.lower() == "zero_trace" and v.lower() in ("1", "true") for k, v in pairs)
     cleaned = []
     for name, value in pairs:
-        lowered = name.lower()
+        lowered = name.lower().split("#")[-1]
         if lowered in SECRET_PARAMS:
             value = "REDACTED"
         elif lowered == "q" and (hide_query or zero_trace):
             value = "REDACTED"
-        cleaned.append((name, value))
-    return urlunsplit((parts.scheme, parts.netloc, parts.path, urlencode(cleaned),
-                       parts.fragment))
+        cleaned.append((name.split("#")[-1] if "#" in name else name, value))
+    return f"{base}?{urlencode(cleaned)}"
 
 
 class RedactSecrets(logging.Filter):
-    def __init__(self, hide_queries: bool = False) -> None:
+    def __init__(self, hide_queries: bool = False, secrets: list[str] | None = None) -> None:
         super().__init__()
         self.hide_queries = hide_queries
+        self.secrets = sorted({s for s in secrets or [] if len(s) >= MIN_SECRET_LENGTH},
+                              key=len, reverse=True)
 
     def _clean(self, value: object) -> object:
-        if not isinstance(value, str) or "?" not in value:
+        if value is None or isinstance(value, int | float | bool):
             return value
-        return _QUERY_IN_TEXT.sub(lambda m: redact_url(m.group(0), self.hide_queries), value)
+        text = value if isinstance(value, str) else str(value)
+        if "?" in text:
+            text = _URLISH.sub(lambda m: redact_url(m.group(0), self.hide_queries), text)
+        for secret in self.secrets:
+            if secret in text:
+                text = text.replace(secret, "REDACTED")
+        return text
 
     def filter(self, record: logging.LogRecord) -> bool:
         if isinstance(record.args, tuple):
@@ -46,8 +63,8 @@ class RedactSecrets(logging.Filter):
         return True
 
 
-def install(hide_queries: bool) -> None:
+def install(hide_queries: bool, secrets: list[str] | None = None) -> None:
     for name in ("uvicorn.access", "uvicorn.error", "httpx", "httpcore", "fairserp"):
         logger = logging.getLogger(name)
         logger.filters = [f for f in logger.filters if not isinstance(f, RedactSecrets)]
-        logger.addFilter(RedactSecrets(hide_queries))
+        logger.addFilter(RedactSecrets(hide_queries, secrets))
