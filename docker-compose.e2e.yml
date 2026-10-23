@@ -14,12 +14,12 @@ services:
 
   fairserp:
     environment:
-      FAIRSERP_OPT_IN: searxng
-      FAIRSERP_SEARXNG_URL: http://mock-upstream:8080
-      FAIRSERP_ORGANIC_PRIORITY: searxng
-      FAIRSERP_ENRICHERS: ""
-      FAIRSERP_SERPAPI_ENGINES: google:auto
-      FAIRSERP_PUBLIC_URL: http://localhost:8000
+      - FAIRSERP_OPT_IN=searxng
+      - FAIRSERP_SEARXNG_URL=http://mock-upstream:8080
+      - FAIRSERP_ORGANIC_PRIORITY=searxng
+      - FAIRSERP_ENRICHERS=
+      - FAIRSERP_SERPAPI_ENGINES=google:auto
+      - FAIRSERP_PUBLIC_URL=http://localhost:8000
     depends_on:
       mock-upstream:
         condition: service_healthy

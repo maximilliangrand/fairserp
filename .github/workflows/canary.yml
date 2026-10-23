@@ -25,12 +25,12 @@ jobs:
       - name: engine=google via the migration alias (Firecrawl opted in, Wikidata, DDG)
         run: |
           curl -sS -H "Authorization: Bearer canary-key" "http://localhost:8000/search.json?engine=google&q=einstein" -o google.json
-          jq '{meta: .search_metadata.fairserp, organic_results: .organic_results[0:3], knowledge_graph}' google.json
+          jq '{error, meta: .search_metadata.fairserp, organic_results: .organic_results[0:3], knowledge_graph}' google.json
       - name: engine=wikipedia (open data, strict profile)
         run: |
           curl -sS -H "Authorization: Bearer canary-key" "http://localhost:8000/v1/search?q=Albert+Einstein&engine=wikipedia" | jq '{status, providers, results: .results[0:2]}'
       - name: local results (OpenStreetMap)
         run: |
-          curl -sS -H "Authorization: Bearer canary-key" "http://localhost:8000/search.json?engine=google_maps&q=coffee&location=Austin,+Texas" | jq '{meta: .search_metadata.fairserp.status, local_results: .local_results[0:3]}'
+          curl -sS -H "Authorization: Bearer canary-key" "http://localhost:8000/search.json?engine=google_maps&q=coffee&location=Austin,+Texas" | jq '{error, meta: .search_metadata.fairserp.status, local_results: .local_results[0:3]}'
       - if: always()
         run: docker compose logs fairserp | tail -50; docker compose down -v
