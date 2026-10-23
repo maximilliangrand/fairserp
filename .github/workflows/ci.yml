@@ -48,7 +48,8 @@ jobs:
         run: docker compose -f docker-compose.yml -f docker-compose.e2e.yml up -d --build --wait --wait-timeout 180
       - run: docker compose -f docker-compose.yml -f docker-compose.e2e.yml ps
       - name: readiness checks both stores
-        run: curl -fsS http://localhost:8000/readyz | tee /dev/stderr | jq -e '.checks == {"cache": "ok", "state": "ok"}'
+        run: |
+          curl -fsS http://localhost:8000/readyz | tee /dev/stderr | jq -e '.checks == {"cache": "ok", "state": "ok"}'
       - name: native search through the full stack
         run: |
           curl -fsS -H "Authorization: Bearer ci-key" "http://localhost:8000/v1/search?q=coffee&freshness=h" -o native.json
