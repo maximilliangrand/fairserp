@@ -110,7 +110,7 @@ class UpstreamBudgets:
                     await self._state.decr(done)
                 who = "this key's" if budget.per_key else "the server's"
                 raise EngineError(engine, f"{who} {budget.window}ly upstream budget "
-                                          f"({budget.limit}) is spent", ErrorKind.RATE_LIMITED)
+                                          f"({budget.limit}) is spent", ErrorKind.THROTTLED)
             taken.append(key)
         return Reservation(tuple(taken))
 
@@ -133,13 +133,15 @@ class CircuitBreaker:
         if remaining > 0:
             seconds = max(1, remaining // 1000)
             raise EngineError(engine, f"circuit open after upstream failures, retry in "
-                                      f"{seconds}s", ErrorKind.RATE_LIMITED, seconds)
+                                      f"{seconds}s", ErrorKind.THROTTLED, seconds)
 
     async def record(self, engine: str, error: EngineError | None) -> None:
         streak = f"circuit_streak:{engine}"
         if error is None:
             await self._state.delete(streak)
             return
+        # Only signs of an upstream outage count. A 4xx or malformed payload can be caused by
+        # one caller's query, so it must not let that caller switch an engine off for all.
         if error.kind not in (ErrorKind.FAILED, ErrorKind.TIMEOUT, ErrorKind.RATE_LIMITED):
             return
         if error.kind == ErrorKind.RATE_LIMITED and error.retry_after:
@@ -175,5 +177,5 @@ class HostLimiter:
             if time.monotonic() + wait > deadline:
                 raise EngineError(engine, f"{host} allows one request per {interval} ms and "
                                           "the next slot is too far away",
-                                  ErrorKind.RATE_LIMITED, 1)
+                                  ErrorKind.THROTTLED, 1)
             await asyncio.sleep(wait)

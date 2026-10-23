@@ -7,7 +7,7 @@ Supported syntax: ``a.b`` (field), ``a[0]`` (index), ``a[]`` (every item),
 import re
 from typing import Any
 
-_INDEX = re.compile(r"\[(\d*)(?::(\d*))?\]")
+_INDEX = re.compile(r"\[([0-9]*)(?::([0-9]*))?\]")
 
 
 class RestrictorError(ValueError):
@@ -27,7 +27,7 @@ def apply(data: Any, expression: str) -> Any:
 
 
 _NAME = re.compile(r"[A-Za-z0-9_]+")
-_BRACKET = re.compile(r"\[(\d*)(?::(\d*))?\]")
+_BRACKET = re.compile(r"\[([0-9]*)(?::([0-9]*))?\]")
 
 
 def validate(expression: str) -> None:
@@ -115,6 +115,15 @@ def _select(data: Any, path: str) -> Any:
     return {key: _apply_brackets(data[key], brackets, rest)}
 
 
+class _Picked(list):
+    """Items selected from a list, remembering which source index each came from, so two
+    selections of the same list merge by source position, not by output position."""
+
+    def __init__(self, pairs: list[tuple[int, Any]]) -> None:
+        super().__init__(item for _, item in pairs)
+        self.indices = [index for index, _ in pairs]
+
+
 def _apply_brackets(value: Any, brackets: str, rest: str) -> Any:
     if not brackets:
         return _select(value, rest)
@@ -126,11 +135,12 @@ def _apply_brackets(value: Any, brackets: str, rest: str) -> Any:
     if ":" not in first.group(0) and start:
         index = int(start)
         if index >= len(value):
-            return []
-        return [_apply_brackets(value[index], remaining, rest)]
+            return _Picked([])
+        return _Picked([(index, _apply_brackets(value[index], remaining, rest))])
     lo = int(start) if start else 0
     hi = int(stop) if stop else len(value)
-    return [_apply_brackets(item, remaining, rest) for item in value[lo:hi]]
+    return _Picked([(i, _apply_brackets(value[i], remaining, rest))
+                    for i in range(lo, min(hi, len(value)))])
 
 
 def _merge(target: dict[str, Any], addition: Any) -> None:
@@ -139,11 +149,17 @@ def _merge(target: dict[str, Any], addition: Any) -> None:
     for key, value in addition.items():
         if key in target and isinstance(target[key], dict) and isinstance(value, dict):
             _merge(target[key], value)
-        elif key in target and isinstance(target[key], list) and isinstance(value, list):
-            for index, item in enumerate(value):
-                if index < len(target[key]) and isinstance(item, dict):
-                    _merge(target[key][index], item)
-                elif index >= len(target[key]):
-                    target[key].append(item)
+        elif key in target and isinstance(target[key], _Picked) and isinstance(value, _Picked):
+            target[key] = _merge_picked(target[key], value)
         else:
             target[key] = value
+
+
+def _merge_picked(left: _Picked, right: _Picked) -> _Picked:
+    by_index = dict(zip(left.indices, left, strict=True))
+    for index, item in zip(right.indices, right, strict=True):
+        if index in by_index and isinstance(by_index[index], dict) and isinstance(item, dict):
+            _merge(by_index[index], item)
+        else:
+            by_index.setdefault(index, item)
+    return _Picked(sorted(by_index.items()))

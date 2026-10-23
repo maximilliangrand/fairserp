@@ -6,7 +6,7 @@ from urllib.parse import quote
 
 from fairserp.canonical import strip_tracking
 from fairserp.config import Settings
-from fairserp.engines.base import Engine, EngineContext, require
+from fairserp.engines.base import Engine, EngineContext, EngineError, ErrorKind, require
 from fairserp.model import EngineOutput, SearchQuery, WebResult
 from fairserp.results import clean_text, snippet
 from fairserp.rights import CommercialUse, Provenance, Rights
@@ -39,6 +39,9 @@ class MarginaliaEngine(Engine):
         return FREE_KEY_RIGHTS
 
     async def fetch(self, query: SearchQuery, ctx: EngineContext) -> Any:
+        if not query.q.strip(". "):
+            # The query becomes a path segment; "." and ".." would rewrite the upstream path.
+            raise EngineError(self.name, "query cannot be only dots", ErrorKind.REJECTED)
         base = ctx.settings.marginalia_url.rstrip("/")
         key = quote(ctx.settings.marginalia_api_key, safe="")
         url = f"{base}/{key}/search/{quote(query.q, safe='')}"

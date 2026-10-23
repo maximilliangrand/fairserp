@@ -31,8 +31,10 @@ class Role(StrEnum):
 
 
 class ErrorKind(StrEnum):
-    FAILED = "failed"
-    RATE_LIMITED = "rate_limited"
+    FAILED = "failed"  # upstream outage: connection error or 5xx. Counts toward the circuit.
+    REJECTED = "rejected"  # upstream refused this request (4xx) or sent a bad payload
+    RATE_LIMITED = "rate_limited"  # upstream said slow down (429)
+    THROTTLED = "throttled"  # fairserp's own limits: budget, open circuit, host spacing
     TIMEOUT = "timeout"
     NOT_CONFIGURED = "not_configured"
     POLICY = "policy"
@@ -105,7 +107,8 @@ class Engine(ABC):
         try:
             return self.parse(raw, query)
         except (PayloadError, KeyError, TypeError, ValueError, AttributeError) as exc:
-            raise EngineError(self.name, f"unexpected upstream payload: {exc}") from exc
+            raise EngineError(self.name, f"unexpected upstream payload: {exc}",
+                              ErrorKind.REJECTED) from exc
 
     @abstractmethod
     async def fetch(self, query: SearchQuery, ctx: EngineContext) -> Any: ...
@@ -127,15 +130,20 @@ class Engine(ABC):
             raise EngineError(self.name, "upstream rate limit reached", ErrorKind.RATE_LIMITED,
                               _retry_after(response))
         if status in (401, 403):
-            raise EngineError(self.name, f"upstream refused the request ({status})")
+            raise EngineError(self.name, f"upstream refused the request ({status})",
+                              ErrorKind.REJECTED)
         if 300 <= status < 400:
-            raise EngineError(self.name, f"upstream redirected ({status}); not followed")
-        if status >= 400:
+            raise EngineError(self.name, f"upstream redirected ({status}); not followed",
+                              ErrorKind.REJECTED)
+        if 400 <= status < 500:
+            raise EngineError(self.name, f"upstream returned HTTP {status}", ErrorKind.REJECTED)
+        if status >= 500:
             raise EngineError(self.name, f"upstream returned HTTP {status}")
         try:
             return response.json()
         except ValueError as exc:
-            raise EngineError(self.name, "upstream returned non-JSON content") from exc
+            raise EngineError(self.name, "upstream returned non-JSON content",
+                              ErrorKind.REJECTED) from exc
 
 
 def _retry_after(response: httpx.Response) -> int | None:

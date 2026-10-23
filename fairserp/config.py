@@ -48,6 +48,7 @@ class Settings(BaseSettings):
     cache_ttl_seconds: int = 3600
     archive_ttl_seconds: int = 31 * 24 * 3600
     cache_max_entries: int = 50_000
+    redis_max_connections: int = 50
 
     # Outbound HTTP. trust_env stays off so HTTP(S)_PROXY variables never reroute traffic
     # behind the operator's back; "none" in engine_proxies then really means direct.
@@ -81,7 +82,8 @@ class Settings(BaseSettings):
 
     # Upstream budgets shared by the whole server, "engine:N/window" or per key
     # "engine:N/window/key". Windows: hour, day, month.
-    upstream_budgets: str = "firecrawl:900/month,firecrawl:100/day/key"
+    upstream_budgets: str = ("firecrawl:900/month,firecrawl:300/month/key,"
+                             "firecrawl:100/day/key")
     circuit_failures: int = 5
     circuit_cooldown_seconds: int = 30
 
@@ -147,6 +149,15 @@ class Settings(BaseSettings):
 
     def opt_in_set(self) -> set[str]:
         return set(_split(self.opt_in))
+
+    def secret_values(self) -> list[str]:
+        """Every configured credential, so log redaction can find them anywhere."""
+        provider = [self.brave_api_key, self.mojeek_api_key, self.tavily_api_key,
+                    self.exa_api_key, self.parallel_api_key, self.jina_api_key,
+                    self.firecrawl_api_key]
+        if self.marginalia_api_key != "public":
+            provider.append(self.marginalia_api_key)
+        return [s for s in provider + list(self.parsed_api_keys()) if s]
 
     def enricher_names(self) -> list[str]:
         return _split(self.enrichers)
