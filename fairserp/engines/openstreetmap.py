@@ -125,13 +125,13 @@ class OpenStreetMapEngine(Engine):
 
     async def _geocode(self, ctx: EngineContext, base: str, place: str,
                        language: str | None) -> dict[str, Any] | None:
-        key = f"geo2:{place.casefold()}:{language or ''}"
+        key = f"geo3:{place.casefold()}:{language or ''}"
         if ctx.cache is not None and (cached := await ctx.cache.get_json(key)) is not None:
             return cached or None
-        # A simplified boundary polygon (about 1 KB for a borough) lets results be checked
+        # A simplified boundary polygon (a few KB for a borough) lets results be checked
         # against the named area itself, not just its bounding rectangle.
         params = {"q": place, "format": "jsonv2", "limit": 1, "polygon_geojson": 1,
-                  "polygon_threshold": 0.002}
+                  "polygon_threshold": 0.0005}
         if language:
             params["accept-language"] = language
         hits = await self.get_json(ctx, "GET", base, params=params)
@@ -179,8 +179,22 @@ class OpenStreetMapEngine(Engine):
         return EngineOutput(
             places=page, has_more=len(ranked) > query.offset + query.num, notes=notes,
             area=Area(name=name, latitude=area["lat"], longitude=area["lon"],
-                      bbox=[south, north, west, east], has_boundary=bool(area.get("polygon"))),
+                      bbox=[south, north, west, east], has_boundary=bool(area.get("polygon")),
+                      outline=_outline(area.get("polygon"))),
         )
+
+
+def _outline(polygon: dict[str, Any] | None, max_points: int = 240) -> list[list[list[float]]]:
+    """Outer rings only, thinned to at most max_points each and rounded to about 10 m."""
+    if not polygon:
+        return []
+    shapes = [polygon["coordinates"]] if polygon["type"] == "Polygon" else polygon["coordinates"]
+    rings = []
+    for shape in shapes:
+        ring = shape[0]
+        stride = max(1, -(-len(ring) // max_points))
+        rings.append([[round(lon, 4), round(lat, 4)] for lon, lat in ring[::stride]])
+    return rings
 
 
 def _viewbox(area: dict[str, Any]) -> str:
