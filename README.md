@@ -21,6 +21,8 @@ FAIRSERP_OPT_IN=firecrawl uvx --from git+https://github.com/maximilliangrand/fai
 
 # Docker: the app plus a cache Redis and a non-evicting state Redis
 FAIRSERP_API_KEYS=my-secret FAIRSERP_OPT_IN=firecrawl docker compose up -d
+# or a released image (private while the repository is private)
+docker run -p 127.0.0.1:8000:8000 -e FAIRSERP_API_KEYS=my-secret ghcr.io/maximilliangrand/fairserp:0.2
 curl -H "Authorization: Bearer my-secret" "http://localhost:8000/v1/search?q=rust+async+runtime"
 ```
 
@@ -89,6 +91,23 @@ Modes: `fast` (default) uses one organic provider and falls through on failure o
 providers concurrently and fuses them with Reciprocal Rank Fusion, keeping each provider's
 own rank. In the [2026-10-23 benchmark](bench/README.md), fusing Firecrawl with Wikipedia
 *lowered* MRR@10 from 0.971 to 0.784 on the queries both answered, so it is not the default.
+
+## MCP server and fetch
+
+```bash
+claude mcp add fairserp -- uvx --from git+https://github.com/maximilliangrand/fairserp fairserp mcp
+```
+
+The tools are `web_search`, `local_search` and `fetch`. They return compact cited evidence:
+numbered results with the provider, rank and provenance of each, degraded providers, ignored
+params and attribution. The same policy, budgets and retention rules apply as on the HTTP API.
+
+`fetch` (also `GET /v1/fetch?url=&question=`) reads one public page and returns the passages
+most relevant to the question, plus title, published and updated dates, and the final URL.
+It respects robots.txt per RFC 9309 (wildcards, longest match; an unreachable robots.txt
+means do not fetch). It pins DNS to checked public addresses, rechecks every redirect hop
+(at most three), refuses private, loopback, link-local and CGNAT ranges, and caps size, time
+and content type.
 
 ## Providers, rights and policy
 
@@ -173,6 +192,17 @@ with `scripts/record_fixtures.py`, add contract and parser tests, and regenerate
 with `scripts/capabilities.py`. External packages can register engines through the
 `fairserp.engines` entry-point group.
 
+## Benchmark
+
+`bench/` holds a stratified 50-query benchmark: technical, navigational, entity, news,
+multilingual and local. The first run (keyless providers only) found:
+- Wikidata entity resolution 7/7 correct;
+- OpenStreetMap local results 6/6;
+- Firecrawl hit@3 1.0 on technical queries;
+- fusing Firecrawl with Wikipedia *hurt* ranking, which is why `fast` is the default.
+
+Method, caveats and numbers: [bench/README.md](bench/README.md).
+
 ## Development
 
 ```bash
@@ -183,6 +213,10 @@ uv run ruff check .
 
 Required CI runs those tests, the client-truth tests and a Docker Compose stack against a
 mock upstream. `canary.yml` runs live provider queries and is informational only.
+
+Contributions: read [CONTRIBUTING.md](CONTRIBUTING.md) first; it states the sourcing line
+PRs must respect. Security reports: [SECURITY.md](SECURITY.md). Releases and deprecation:
+[RELEASING.md](RELEASING.md). Plans: [ROADMAP.md](ROADMAP.md).
 
 ## License
 
