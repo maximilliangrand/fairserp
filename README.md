@@ -74,10 +74,12 @@ Outcome statuses: `success`, `partial` (results, but a provider failed or timed 
 `Retry-After`), `failed` (HTTP 502). An upstream failure is never reported as an empty
 success.
 
-Modes: `fast` uses one organic provider and falls through on failure or emptiness (reported).
-`research` queries up to `FAIRSERP_RESEARCH_FANOUT` permitted providers concurrently and fuses
-them with Reciprocal Rank Fusion, keeping each provider's own rank. `private` sends the query
-to exactly one upstream and skips enrichment.
+Modes: `fast` (default) uses one organic provider and falls through on failure or emptiness
+(reported). `private` sends the query to exactly one upstream and skips enrichment.
+`research` is **experimental**: it queries up to `FAIRSERP_RESEARCH_FANOUT` permitted
+providers concurrently and fuses them with Reciprocal Rank Fusion, keeping each provider's
+own rank. In the [2026-10-23 benchmark](bench/README.md), fusing Firecrawl with Wikipedia
+*lowered* MRR@10 from 0.971 to 0.784 on the queries both answered, so it is not the default.
 
 ## Providers, rights and policy
 
