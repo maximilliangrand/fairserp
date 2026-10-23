@@ -1,31 +1,57 @@
-"""Marginalia Search API (official, independent index). https://about.marginalia-search.com/article/api"""
+"""Marginalia Search API, an independent small-web index. https://about.marginalia-search.com/article/api"""
 
+from dataclasses import replace
 from typing import Any
 from urllib.parse import quote
 
-from fairserp.engines.base import Engine, EngineContext, Fragments, SearchRequest
-from fairserp.results import organic_result
+from fairserp.canonical import strip_tracking
+from fairserp.config import Settings
+from fairserp.engines.base import Engine, EngineContext, require
+from fairserp.model import EngineOutput, SearchQuery, WebResult
+from fairserp.results import clean_text, snippet
+from fairserp.rights import CommercialUse, Provenance, Rights
+
+FREE_KEY_RIGHTS = Rights(
+    provenance=Provenance.OWN_INDEX,
+    commercial_use=CommercialUse.NONCOMMERCIAL,
+    max_storage_seconds=None,
+    attribution="Marginalia Search, CC-BY-NC-SA 4.0",
+    terms_url="https://about.marginalia-search.com/article/api/",
+    terms_reviewed="2026-10-23",
+    notes="Free and shared 'public' keys license results CC-BY-NC-SA 4.0 (noncommercial).",
+)
 
 
 class MarginaliaEngine(Engine):
     name = "marginalia"
     upstream = "https://api.marginalia.nu"
     required_settings = ("marginalia_api_key",)
-    notes = "Shared 'public' key is often exhausted; free personal key by email. CC-BY-NC-SA."
+    max_depth = 100
+    fixture_verified = True
+    rights = FREE_KEY_RIGHTS
+    notes = "Shared 'public' key is often exhausted; free personal key by email (noncommercial)."
 
-    async def fetch(self, request: SearchRequest, ctx: EngineContext) -> Any:
+    def rights_for(self, settings: Settings) -> Rights:
+        if settings.marginalia_commercial_key:
+            return replace(FREE_KEY_RIGHTS, commercial_use=CommercialUse.PER_AGREEMENT,
+                           attribution="Marginalia Search",
+                           notes="Commercial key declared by the operator.")
+        return FREE_KEY_RIGHTS
+
+    async def fetch(self, query: SearchQuery, ctx: EngineContext) -> Any:
         base = ctx.settings.marginalia_url.rstrip("/")
         key = quote(ctx.settings.marginalia_api_key, safe="")
-        url = f"{base}/{key}/search/{quote(request.q, safe='')}"
-        params = {"count": min(request.start + request.num, 100)}
+        url = f"{base}/{key}/search/{quote(query.q, safe='')}"
+        params = {"count": min(query.offset + query.num, self.max_depth)}
         return await self.get_json(ctx, "GET", url, params=params)
 
-    def parse(self, raw: dict[str, Any], request: SearchRequest) -> Fragments:
-        page = (raw.get("results") or [])[request.start : request.start + request.num]
-        return {
-            "organic_results": [
-                organic_result(i, item.get("title", ""), item.get("url", ""),
-                               item.get("description"), request.q)
-                for i, item in enumerate(page, start=1)
-            ]
-        }
+    def parse(self, raw: dict[str, Any], query: SearchQuery) -> EngineOutput:
+        require(isinstance(raw.get("results"), list), "missing results list")
+        everything = raw["results"]
+        page = everything[query.offset: query.offset + query.num]
+        web = [WebResult(url=strip_tracking(it["url"]), title=clean_text(it.get("title")),
+                         snippet=snippet(it.get("description"), query.q))
+               for it in page]
+        return EngineOutput(web=web,
+                            has_more=len(everything) >= query.offset + query.num
+                            and query.offset + query.num < self.max_depth)

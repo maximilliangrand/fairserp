@@ -1,9 +1,11 @@
-"""Engine registry and SerpApi engine-name aliasing."""
+"""Engine registry. Built-in adapters plus any installed through the ``fairserp.engines``
+entry-point group, so ``pip install fairserp-something`` can add an engine."""
 
-from fairserp.config import Settings
-from fairserp.engines.base import Engine, EngineError
+import logging
+from importlib.metadata import entry_points
+
+from fairserp.engines.base import Engine, EngineError, ErrorKind, Role
 from fairserp.engines.brave import BraveEngine
-from fairserp.engines.composite import CompositeEngine
 from fairserp.engines.duckduckgo_ia import DuckDuckGoInstantAnswerEngine
 from fairserp.engines.firecrawl import FirecrawlEngine
 from fairserp.engines.marginalia import MarginaliaEngine
@@ -11,39 +13,32 @@ from fairserp.engines.mojeek import MojeekEngine
 from fairserp.engines.openstreetmap import OpenStreetMapEngine
 from fairserp.engines.searxng import SearxngEngine
 from fairserp.engines.tavily import TavilyEngine
+from fairserp.engines.wikidata import WikidataEngine
 from fairserp.engines.wikipedia import WikipediaEngine
 
-# SerpApi engine names fairserp answers with local results only.
-MAPS_ENGINES = {"google_maps", "google_local"}
+logger = logging.getLogger("fairserp")
+
+BUILTIN = (
+    BraveEngine, MojeekEngine, MarginaliaEngine, TavilyEngine, FirecrawlEngine,
+    SearxngEngine, WikipediaEngine, WikidataEngine, DuckDuckGoInstantAnswerEngine,
+    OpenStreetMapEngine,
+)
 
 
-def build_registry() -> dict[str, Engine]:
-    engines: dict[str, Engine] = {
-        engine.name: engine
-        for engine in (
-            BraveEngine(),
-            MojeekEngine(),
-            TavilyEngine(),
-            FirecrawlEngine(),
-            MarginaliaEngine(),
-            SearxngEngine(),
-            DuckDuckGoInstantAnswerEngine(),
-            WikipediaEngine(),
-            OpenStreetMapEngine(),
-        )
-    }
-    engines["auto"] = CompositeEngine(engines)
+def build_registry(load_plugins: bool = True) -> dict[str, Engine]:
+    engines: dict[str, Engine] = {cls.name: cls() for cls in BUILTIN}
+    if load_plugins:
+        for entry in entry_points(group="fairserp.engines"):
+            try:
+                engine = entry.load()()
+            except Exception:
+                logger.exception("could not load engine plugin %s", entry.name)
+                continue
+            if engine.name in engines:
+                logger.warning("engine plugin %s shadows a built-in; ignored", engine.name)
+                continue
+            engines[engine.name] = engine
     return engines
 
 
-def resolve(name: str, registry: dict[str, Engine], settings: Settings) -> Engine:
-    if name in MAPS_ENGINES:
-        return registry["openstreetmap"]
-    target = settings.parsed_aliases().get(name, name)
-    engine = registry.get(target)
-    if engine is None:
-        raise EngineError(name, f"Unsupported `{name}` search engine.", 400)
-    return engine
-
-
-__all__ = ["Engine", "EngineError", "MAPS_ENGINES", "build_registry", "resolve"]
+__all__ = ["Engine", "EngineError", "ErrorKind", "Role", "build_registry"]

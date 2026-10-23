@@ -1,52 +1,64 @@
-"""Mojeek Web Search API (official). https://www.mojeek.com/support/api/search/request_parameters.html"""
+"""Mojeek Web Search API. https://www.mojeek.com/support/api/search/request_parameters.html"""
 
+from datetime import UTC, datetime
 from typing import Any
 
-from fairserp.engines.base import Engine, EngineContext, EngineError, Fragments, SearchRequest
-from fairserp.results import organic_result
+from fairserp.canonical import strip_tracking
+from fairserp.engines.base import Engine, EngineContext, require
+from fairserp.model import EngineOutput, SearchQuery, WebResult
+from fairserp.results import clean_text, snippet
+from fairserp.rights import CommercialUse, Provenance, Rights
 
 
 class MojeekEngine(Engine):
     name = "mojeek"
     upstream = "https://api.mojeek.com/search"
     required_settings = ("mojeek_api_key",)
-    # Mojeek's entry plans allow caching for up to one hour.
-    default_cache_ttl = 3600
-    notes = "Paid key required (bank card to open an account). Independent index."
+    supports = frozenset({"country", "language", "safe"})
+    max_depth = 1000
+    cost_per_call_usd = 0.003
+    rights = Rights(
+        provenance=Provenance.OWN_INDEX,
+        commercial_use=CommercialUse.ALLOWED,
+        max_storage_seconds=3600,
+        attribution=None,
+        terms_url="https://www.mojeek.com/services/search/web-search-api/",
+        terms_reviewed="2026-10-23",
+        notes="Entry plans allow caching for up to one hour; longer storage needs a plan "
+              "that grants storage rights.",
+    )
+    notes = "Paid key (bank card to open an account). Independent index."
 
-    async def fetch(self, request: SearchRequest, ctx: EngineContext) -> Any:
-        params: dict[str, Any] = {
-            "q": request.q,
-            "api_key": ctx.settings.mojeek_api_key,
-            "fmt": "json",
-            "s": request.start + 1,
-            "t": min(request.num, 100),
-        }
-        if request.gl:
-            params["rb"] = request.gl.upper()
-        if request.hl:
-            params["lb"] = request.hl.split("-")[0].upper()
-        if request.safe == "active":
+    async def fetch(self, query: SearchQuery, ctx: EngineContext) -> Any:
+        params: dict[str, Any] = {"q": query.q, "api_key": ctx.settings.mojeek_api_key,
+                                  "fmt": "json", "s": query.offset + 1, "t": query.num}
+        if query.country:
+            params["rb"] = query.country.upper()
+        if query.language:
+            params["lb"] = query.language.upper()
+        if query.safe:
             params["safe"] = 1
         return await self.get_json(ctx, "GET", self.upstream, params=params)
 
-    def parse(self, raw: dict[str, Any], request: SearchRequest) -> Fragments:
-        response = raw.get("response") or {}
-        if response.get("status", "OK") != "OK":
-            raise EngineError(self.name, str(response.get("status")))
-        results = [
-            organic_result(
-                index,
-                item.get("title", ""),
-                item.get("url", ""),
-                item.get("desc"),
-                request.q,
-                date=item.get("date"),
-            )
-            for index, item in enumerate(response.get("results") or [], start=1)
+    def parse(self, raw: dict[str, Any], query: SearchQuery) -> EngineOutput:
+        response = raw.get("response")
+        require(isinstance(response, dict), "missing response object")
+        require(response.get("status") == "OK", f"status {response.get('status')!r}")
+        web = [
+            WebResult(url=strip_tracking(item["url"]), title=clean_text(item.get("title")),
+                      snippet=snippet(item.get("desc"), query.q),
+                      published_at=_date(item.get("date")))
+            for item in response.get("results") or []
         ]
-        fragments: Fragments = {"organic_results": results}
         total = (response.get("head") or {}).get("results")
-        if total:
-            fragments["search_information"] = {"total_results": int(total)}
-        return fragments
+        return EngineOutput(
+            web=web, total_results=int(total) if total else None,
+            has_more=bool(total) and query.offset + query.num < min(int(total or 0),
+                                                                     self.max_depth),
+        )
+
+
+def _date(value: Any) -> str | None:
+    if isinstance(value, int | float):
+        return datetime.fromtimestamp(value, UTC).date().isoformat()
+    return value or None
