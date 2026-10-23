@@ -2,6 +2,7 @@
 
 import hashlib
 import json
+import re
 import secrets
 from datetime import UTC, datetime
 from typing import Any
@@ -22,6 +23,10 @@ BLOCK_ORDER = (
     "ads", "local_map", "local_results", "knowledge_graph", "answer_box",
     "related_questions", "organic_results", "related_searches",
 )
+
+
+_GL = re.compile(r"[A-Za-z]{2}")
+_HL = re.compile(r"[A-Za-z]{2,3}(?:[-_][A-Za-z0-9]{2,4})?")
 
 
 class ParamError(ValueError):
@@ -54,6 +59,10 @@ def build_request(params: dict[str, str]) -> SearchRequest:
     if params.get("kl") and "-" in params["kl"]:
         gl, hl = (gl or params["kl"].split("-")[0]), (hl or params["kl"].split("-")[1])
     gl = gl or params.get("cc")
+    if gl and not _GL.fullmatch(gl):
+        raise ParamError("Invalid `gl` parameter.")
+    if hl and not _HL.fullmatch(hl):
+        raise ParamError("Invalid `hl` parameter.")
 
     num = _int(params, "num", 10, 1, 100)
     num = _int(params, "count", num, 1, 50)
@@ -155,7 +164,7 @@ def assemble(
         response["local_results"] = response["local_results"].get("places", [])
     if organic:
         response.update(_pagination(request, public_url, len(organic)))
-    else:
+    elif not any(block in response for block in BLOCK_ORDER):
         response["error"] = NO_RESULTS
     return response
 
@@ -176,8 +185,11 @@ def _link_block(block: str, value: Any, request: SearchRequest, public_url: str)
 
 def _pagination(request: SearchRequest, public_url: str, count: int) -> dict[str, Any]:
     page = request.page
+    # Bing's 1-based "first" would override "start", so links always use "start".
+    base = {k: v for k, v in request.params.items() if k != "first"}
+
     def page_link(number: int) -> str:
-        return search_url(public_url, {**request.params, "start": (number - 1) * request.num})
+        return search_url(public_url, {**base, "start": (number - 1) * request.num})
 
     has_next = count >= request.num
     others = {str(n): page_link(n) for n in range(max(1, page - 4), page + 6) if n != page}

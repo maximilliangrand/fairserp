@@ -29,7 +29,9 @@ def upstreams():
         mock.post("https://api.firecrawl.dev/v2/search", name="firecrawl").respond(
             json=load("firecrawl_coffee.json")
         )
-        mock.get("https://api.duckduckgo.com/").respond(json=load("ddg_ia_coffee.json"))
+        mock.get("https://api.duckduckgo.com/", name="ddg").respond(
+            json=load("ddg_ia_coffee.json")
+        )
         mock.get("https://en.wikipedia.org/w/api.php").respond(
             json={"query": {"searchinfo": {"totalhits": 0}, "search": []}}
         )
@@ -115,7 +117,8 @@ def test_cache_hit_is_free_and_identical(upstreams):
         first = client.get("/search.json", params=params).json()
         second = client.get("/search.json", params={**params, "source": "nodejs"}).json()
         account = client.get("/account.json", params={"api_key": "good"}).json()
-    assert first["search_metadata"]["id"] == second["search_metadata"]["id"]
+    assert first["search_metadata"]["id"] != second["search_metadata"]["id"]
+    assert first["organic_results"] == second["organic_results"]
     assert upstreams["firecrawl"].call_count == 1
     assert account["this_hour_searches"] == 1
 
@@ -247,9 +250,8 @@ def test_unknown_engine(upstreams):
 
 
 def test_empty_results_return_200_with_error(upstreams):
-    upstreams["firecrawl"].respond(
-        json={"success": True, "data": {"web": []}}
-    )
+    upstreams["firecrawl"].respond(json={"success": True, "data": {"web": []}})
+    upstreams["ddg"].respond(json={})
     with make_client() as client:
         response = client.get("/search.json", params={"q": "zzqx", "api_key": "good"})
     assert response.status_code == 200
@@ -279,7 +281,8 @@ def test_locations_api(upstreams):
         json=load("nominatim_austin.json")
     )
     with make_client() as client:
-        data = client.get("/locations.json", params={"q": "Austin", "limit": 1}).json()
+        data = client.get("/locations.json",
+                          params={"q": "Austin", "limit": 1, "api_key": "good"}).json()
     assert data[0]["canonical_name"] == "Austin,Travis County,Texas,United States"
     assert data[0]["gps"] == [-97.7474086, 30.2649261]
     assert data[0]["target_type"] == "City"
@@ -307,3 +310,89 @@ def test_proxy_is_used_for_engine(upstreams):
     ]
     assert pool._proxy_for("wikipedia") is None
     assert isinstance(pool._client(None), httpx.AsyncClient)
+
+
+def test_cached_result_is_archived_for_the_second_caller(upstreams):
+    with make_client() as client:
+        client.get("/search.json", params={"q": "coffee", "api_key": "good"})
+        second = client.get("/search.json", params={"q": "coffee", "api_key": "other"}).json()
+        archived = client.get(f"/searches/{second['search_metadata']['id']}.json",
+                              params={"api_key": "other"})
+    assert archived.status_code == 200
+
+
+@pytest.mark.parametrize("hl", ["169.254.169.254/latest#", "en.evil.com", "e"])
+def test_hl_cannot_reach_arbitrary_hosts(upstreams, hl):
+    with make_client() as client:
+        response = client.get("/search.json", params={"q": "coffee", "hl": hl,
+                                                      "api_key": "good"})
+    assert response.status_code == 400
+    assert response.json() == {"error": "Invalid `hl` parameter."}
+
+
+def test_upstream_timeout_falls_through(upstreams):
+    upstreams["firecrawl"].side_effect = httpx.ConnectTimeout("slow")
+    upstreams.get(url__regex=r"https://api\.marginalia\.nu/.*").respond(
+        json=load("marginalia_coffee.json")
+    )
+    with make_client() as client:
+        data = client.get("/search.json", params={"q": "coffee", "api_key": "good"}).json()
+    assert data["search_metadata"]["fairserp_sources"][0] == {
+        "engine": "firecrawl", "status": "error", "error": "upstream timed out",
+    }
+    assert data["organic_results"][0]["title"] == "Coffee"
+
+
+def test_async_rejects_zero_trace(upstreams):
+    with make_client() as client:
+        response = client.get("/search.json", params={"q": "c", "async": "true",
+                                                      "zero_trace": "true", "api_key": "good"})
+    assert response.status_code == 400
+
+
+def test_bing_first_param_paginates(upstreams):
+    with make_client() as client:
+        data = client.get("/search.json", params={"engine": "bing", "q": "coffee", "first": "1",
+                                                  "count": "5", "api_key": "good"}).json()
+    nxt = data["serpapi_pagination"]["next"]
+    assert "first=" not in nxt and "start=5" in nxt
+
+
+def test_maps_results_have_no_error(upstreams):
+    with make_client() as client:
+        data = client.get("/search.json", params={"engine": "google_maps", "q": "coffee",
+                                                  "location": "Austin", "api_key": "good"}).json()
+    assert "error" not in data
+
+
+def test_deep_json_restrictor_is_rejected(upstreams):
+    with make_client() as client:
+        response = client.get("/search.json", params={
+            "q": "coffee", "api_key": "good", "json_restrictor": "a." + "{a" * 50 + "}" * 50,
+        })
+    assert response.status_code == 400
+
+
+def test_framework_errors_use_serpapi_error_shape(upstreams):
+    with make_client() as client:
+        missing = client.get("/nope")
+        invalid = client.get("/locations.json", params={"q": "x", "limit": "many",
+                                                        "api_key": "good"})
+    assert missing.status_code == 404 and "error" in missing.json()
+    assert invalid.status_code == 400 and "limit" in invalid.json()["error"]
+
+
+def test_access_log_redacts_keys():
+    import logging
+
+    from fairserp.app import RedactKeys
+
+    record = logging.LogRecord("uvicorn.access", logging.INFO, "", 0, '%s "%s %s" %s', (
+        "1.2.3.4", "GET", "/search.json?q=x&api_key=secret&serp_api_key=s2", 200), None)
+    RedactKeys().filter(record)
+    assert "secret" not in record.getMessage() and "s2" not in record.getMessage()
+
+
+def test_invalid_hourly_limit_config():
+    with pytest.raises(ValueError):
+        Settings(_env_file=None, api_keys="alice:lots")

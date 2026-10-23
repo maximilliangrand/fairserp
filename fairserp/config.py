@@ -2,7 +2,7 @@
 
 from functools import lru_cache
 
-from pydantic import Field
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -51,6 +51,15 @@ class Settings(BaseSettings):
     # Engine-specific cache policy overrides, e.g. "brave:0" when an upstream's terms
     # forbid storing results. Engines also declare their own defaults.
     engine_cache_ttl: str = ""
+
+    @field_validator("api_keys")
+    @classmethod
+    def _check_api_keys(cls, value: str) -> str:
+        for entry in _split(value):
+            _, _, limit = entry.partition(":")
+            if limit and not limit.isdigit():
+                raise ValueError(f"hourly limit must be a whole number in {entry!r}")
+        return value
 
     def parsed_api_keys(self) -> dict[str, int]:
         keys: dict[str, int] = {}

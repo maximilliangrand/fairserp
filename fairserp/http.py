@@ -41,7 +41,7 @@ class HttpPool:
                 proxy=proxy,
                 timeout=self._settings.http_timeout_seconds,
                 headers={"User-Agent": self._settings.user_agent},
-                follow_redirects=True,
+                follow_redirects=False,
             )
         return self._clients[proxy]
 

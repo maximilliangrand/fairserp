@@ -2,6 +2,8 @@
 
 from typing import Any
 
+import httpx
+
 from fairserp.engines.base import EngineContext, EngineError
 from fairserp.store import Store
 
@@ -15,7 +17,10 @@ async def search(q: str, limit: int, ctx: EngineContext, store: Store) -> list[d
         return cached
     url = f"{ctx.settings.nominatim_url.rstrip('/')}/search"
     params = {"q": q, "format": "jsonv2", "limit": limit, "addressdetails": 1}
-    response = await ctx.http.request("openstreetmap", "GET", url, params=params)
+    try:
+        response = await ctx.http.request("openstreetmap", "GET", url, params=params)
+    except httpx.HTTPError as exc:
+        raise EngineError("openstreetmap", "upstream connection failed") from exc
     if response.status_code != 200:
         raise EngineError("openstreetmap", f"upstream returned HTTP {response.status_code}")
     result = [_location(item) for item in response.json()]

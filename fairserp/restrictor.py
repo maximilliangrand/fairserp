@@ -14,7 +14,27 @@ class RestrictorError(ValueError):
     pass
 
 
+MAX_LENGTH = 1000
+MAX_DEPTH = 8
+
+
 def apply(data: Any, expression: str) -> Any:
+    if len(expression) > MAX_LENGTH:
+        raise RestrictorError("json_restrictor is too long")
+    if _max_depth(expression) > MAX_DEPTH:
+        raise RestrictorError("json_restrictor is nested too deeply")
+    return _apply(data, expression)
+
+
+def _max_depth(expression: str) -> int:
+    depth = deepest = 0
+    for char in expression:
+        depth += {"{": 1, "}": -1}.get(char, 0)
+        deepest = max(deepest, depth)
+    return deepest
+
+
+def _apply(data: Any, expression: str) -> Any:
     result: dict[str, Any] = {}
     for path in _split_top_level(expression):
         _merge(result, _select(data, path.strip()))
@@ -46,7 +66,7 @@ def _select(data: Any, path: str) -> Any:
     if not path:
         return data
     if path.startswith("{") and path.endswith("}"):
-        return apply(data, path[1:-1])
+        return _apply(data, path[1:-1])
     match = re.match(r"([A-Za-z0-9_]+)((?:\[[0-9:]*\])*)\.?(.*)", path)
     if not match:
         raise RestrictorError(f"Invalid json_restrictor path: {path}")

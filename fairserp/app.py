@@ -2,6 +2,8 @@
 
 import asyncio
 import hashlib
+import logging
+import re
 import time
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
@@ -9,7 +11,9 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse, Response
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from fairserp import __version__, locations, render, restrictor, serp
 from fairserp.config import Settings, get_settings
@@ -18,6 +22,22 @@ from fairserp.engines.base import EngineContext, SearchRequest
 from fairserp.engines.composite import SOURCES_KEY
 from fairserp.http import HttpPool
 from fairserp.store import Store, create_store
+
+logger = logging.getLogger("fairserp")
+
+
+class RedactKeys(logging.Filter):
+    """Keep API keys sent as query params out of access logs."""
+
+    PATTERN = re.compile(r"((?:serp_)?api_key=)[^&\s]+")
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        if isinstance(record.args, tuple):
+            record.args = tuple(
+                self.PATTERN.sub(r"\1REDACTED", a) if isinstance(a, str) else a
+                for a in record.args
+            )
+        return True
 
 
 class ApiError(Exception):
@@ -58,10 +78,20 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         await services.store.close()
 
     app = FastAPI(title="fairserp", version=__version__, lifespan=lifespan)
+    logging.getLogger("uvicorn.access").addFilter(RedactKeys())
 
     @app.exception_handler(ApiError)
     async def api_error(_: Request, exc: ApiError) -> JSONResponse:
         return JSONResponse({"error": exc.message}, status_code=exc.status)
+
+    @app.exception_handler(StarletteHTTPException)
+    async def http_error(_: Request, exc: StarletteHTTPException) -> JSONResponse:
+        return JSONResponse({"error": str(exc.detail)}, status_code=exc.status_code)
+
+    @app.exception_handler(RequestValidationError)
+    async def validation_error(_: Request, exc: RequestValidationError) -> JSONResponse:
+        fields = ", ".join(str(e["loc"][-1]) for e in exc.errors())
+        return JSONResponse({"error": f"Invalid parameter: {fields}"}, status_code=400)
 
     _register_routes(app)
     return app
@@ -87,9 +117,14 @@ def _authenticate(request: Request, services: Services) -> str:
     return key
 
 
+def _owner(api_key: str) -> str:
+    """Stable, non-reversible id for a key, used in storage instead of the key itself."""
+    return hashlib.sha256(api_key.encode()).hexdigest()[:16]
+
+
 def _usage_keys(api_key: str, moment: datetime | None = None) -> tuple[str, str]:
     moment = moment or datetime.now(UTC)
-    owner = hashlib.sha256(api_key.encode()).hexdigest()[:16]
+    owner = _owner(api_key)
     return f"usage:hour:{owner}:{moment:%Y%m%d%H}", f"usage:month:{owner}:{moment:%Y%m}"
 
 
@@ -97,16 +132,18 @@ def _hourly_limit(api_key: str, settings: Settings) -> int:
     return settings.parsed_api_keys().get(api_key, settings.default_hourly_limit)
 
 
-async def _check_quota(api_key: str, services: Services) -> None:
+async def _reserve_quota(api_key: str, services: Services) -> None:
+    """Count the search up front so concurrent requests cannot overshoot the limit."""
     hour_key, _ = _usage_keys(api_key)
-    if await services.store.count(hour_key) >= _hourly_limit(api_key, services.settings):
+    if await services.store.incr(hour_key, 3600) > _hourly_limit(api_key, services.settings):
+        await services.store.decr(hour_key)
         raise ApiError(429, "Your searches for the past hour have exceeded your hourly limit.")
 
 
-async def _record_usage(api_key: str, services: Services) -> None:
-    hour_key, month_key = _usage_keys(api_key)
-    await services.store.incr(hour_key, 3600)
-    await services.store.incr(month_key, 32 * 24 * 3600)
+async def _release_quota(api_key: str, services: Services) -> None:
+    """Failed searches are free, as on SerpApi."""
+    hour_key, _ = _usage_keys(api_key)
+    await services.store.decr(hour_key)
 
 
 # ---------------------------------------------------------------- search pipeline
@@ -126,6 +163,18 @@ def _cache_ttl(sources: list[dict[str, Any]], services: Services) -> int:
     return max(0, min(ttls))
 
 
+async def _archive(
+    services: Services, api_key: str, response: dict[str, Any], ttl: int | None = None
+) -> None:
+    if serp.truthy(response.get("search_parameters", {}).get("zero_trace")):
+        return
+    await services.store.set_json(
+        f"search:{response['search_metadata']['id']}",
+        {"owner": _owner(api_key), "response": response},
+        ttl or services.settings.archive_ttl_seconds,
+    )
+
+
 async def _run_search(
     services: Services,
     engine: Engine,
@@ -134,33 +183,45 @@ async def _run_search(
     api_key: str,
 ) -> dict[str, Any]:
     started = time.perf_counter()
-    archive_key = f"search:{meta['id']}"
     zero_trace = serp.truthy(req.params.get("zero_trace"))
     try:
         fragments = await engine.search(req, services.ctx)
-    except EngineError as exc:
-        failed = {"search_metadata": {**meta, "status": "Error"}, "error": exc.message}
+        sources = fragments.pop(SOURCES_KEY, None) or [{"engine": engine.name, "status": "ok"}]
+        response = serp.assemble(
+            req, fragments, {**meta, "status": "Success"}, services.settings.public_url,
+            time.perf_counter() - started, sources,
+        )
+    except Exception as exc:
+        await _release_quota(api_key, services)
+        if not isinstance(exc, EngineError):
+            logger.exception("search failed on engine %s", engine.name)
+            exc = EngineError(engine.name, "internal error while searching", 500)
         if not zero_trace:
-            await services.store.set_json(
-                archive_key, {"owner": api_key, "response": failed},
-                services.settings.archive_ttl_seconds,
-            )
+            failed = {"search_metadata": {**meta, "status": "Error"}, "error": exc.message}
+            await _archive(services, api_key, failed)
         raise ApiError(exc.status, exc.message) from exc
 
-    sources = fragments.pop(SOURCES_KEY, None) or [{"engine": engine.name, "status": "ok"}]
-    response = serp.assemble(
-        req, fragments, {**meta, "status": "Success"}, services.settings.public_url,
-        time.perf_counter() - started, sources,
-    )
     if not zero_trace:
-        await services.store.set_json(
-            archive_key, {"owner": api_key, "response": response},
-            services.settings.archive_ttl_seconds,
-        )
-        ttl = _cache_ttl(sources, services)
-        if ttl > 0:
-            await services.store.set_json(serp.cache_key(req.params), response, ttl)
-    await _record_usage(api_key, services)
+        cache_ttl = _cache_ttl(sources, services)
+        # Upstreams that forbid caching only get a short-lived archive copy.
+        await _archive(services, api_key, response, None if cache_ttl else 3600)
+        if cache_ttl > 0:
+            await services.store.set_json(serp.cache_key(req.params), response, cache_ttl)
+    _, month_key = _usage_keys(api_key)
+    await services.store.incr(month_key, 32 * 24 * 3600)
+    return response
+
+
+async def _from_cache(
+    services: Services, api_key: str, cached: dict[str, Any], zero_trace: bool
+) -> dict[str, Any]:
+    """Serve a cached result under a fresh search id the caller owns in the archive."""
+    fresh = serp.metadata(serp.new_search_id(), services.settings.public_url, "Success")
+    links = ("id", "json_endpoint", "markdown_endpoint", "raw_html_file")
+    meta = {**cached["search_metadata"], **{k: fresh[k] for k in links}}
+    response = {**cached, "search_metadata": meta}
+    if not zero_trace:
+        await _archive(services, api_key, response)
     return response
 
 
@@ -178,23 +239,23 @@ async def _search(request: Request, output: str | None) -> Response:
         raise ApiError(exc.status, exc.message) from exc
 
     no_cache, run_async = serp.truthy(params.get("no_cache")), serp.truthy(params.get("async"))
+    zero_trace = serp.truthy(params.get("zero_trace"))
     if no_cache and run_async:
         raise ApiError(400, "`no_cache` and `async` parameters can't be used together.")
+    if zero_trace and run_async:
+        raise ApiError(400, "`zero_trace` and `async` parameters can't be used together.")
 
     if not no_cache:
         cached = await services.store.get_json(serp.cache_key(params))
         if cached is not None:
-            return _format(cached, output, params.get("json_restrictor"))
+            response = await _from_cache(services, api_key, cached, zero_trace)
+            return _format(response, output, params.get("json_restrictor"))
 
-    await _check_quota(api_key, services)
+    await _reserve_quota(api_key, services)
     meta = serp.metadata(serp.new_search_id(), services.settings.public_url, "Processing")
 
     if run_async:
-        await services.store.set_json(
-            f"search:{meta['id']}",
-            {"owner": api_key, "response": {"search_metadata": meta}},
-            services.settings.archive_ttl_seconds,
-        )
+        await _archive(services, api_key, {"search_metadata": meta})
         task = asyncio.create_task(_run_search(services, engine, req, meta, api_key))
         services.background.add(task)
         task.add_done_callback(services.background.discard)
@@ -251,7 +312,7 @@ def _register_routes(app: FastAPI) -> None:
         stored = await services.store.get_json(f"search:{search_id}")
         if stored is None:
             raise ApiError(404, "Search not found or expired from the archive.")
-        if not services.settings.auth_disabled and stored["owner"] != api_key:
+        if not services.settings.auth_disabled and stored["owner"] != _owner(api_key):
             raise ApiError(404, "Search not found or expired from the archive.")
         return _format(stored["response"], output, request.query_params.get("json_restrictor"))
 
@@ -286,6 +347,7 @@ def _register_routes(app: FastAPI) -> None:
     @app.get("/locations.json")
     async def locations_api(request: Request, q: str = "", limit: int = 10) -> list[dict]:
         services = _services(request)
+        _authenticate(request, services)
         if not q.strip():
             raise ApiError(400, "Missing query `q` parameter.")
         try:

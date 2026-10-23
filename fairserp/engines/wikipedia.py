@@ -4,11 +4,15 @@ Wikimedia asks API clients to send a descriptive User-Agent, set FAIRSERP_USER_A
 with a contact address for production use.
 """
 
+import re
 from typing import Any
 from urllib.parse import quote
 
 from fairserp.engines.base import Compliance, Engine, EngineContext, Fragments, Role, SearchRequest
 from fairserp.results import organic_result
+
+# The language code becomes part of the upstream hostname, so it must be strictly a code.
+LANG = re.compile(r"[a-z]{2,3}")
 
 
 class WikipediaEngine(Engine):
@@ -20,6 +24,8 @@ class WikipediaEngine(Engine):
 
     async def fetch(self, request: SearchRequest, ctx: EngineContext) -> Any:
         lang = (request.hl or ctx.settings.wikipedia_lang).split("-")[0].lower()
+        if not LANG.fullmatch(lang):
+            lang = ctx.settings.wikipedia_lang
         base = f"https://{lang}.wikipedia.org"
         params = {
             "action": "query", "list": "search", "srsearch": request.q, "format": "json",

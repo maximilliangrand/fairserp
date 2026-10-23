@@ -22,14 +22,17 @@ class Store(Protocol):
 
     async def count(self, key: str) -> int: ...
 
+    async def decr(self, key: str) -> None: ...
+
     async def ttl(self, key: str) -> int: ...
 
     async def close(self) -> None: ...
 
 
 class MemoryStore:
-    def __init__(self) -> None:
+    def __init__(self, max_entries: int = 50_000) -> None:
         self._data: dict[str, tuple[float, Any]] = {}
+        self._max_entries = max_entries
 
     def _live(self, key: str) -> Any | None:
         entry = self._data.get(key)
@@ -61,15 +64,25 @@ class MemoryStore:
     async def count(self, key: str) -> int:
         return self._live(key) or 0
 
+    async def decr(self, key: str) -> None:
+        current = self._live(key)
+        if current:
+            expires_at, _ = self._data[key]
+            self._data[key] = (expires_at, current - 1)
+
     async def ttl(self, key: str) -> int:
         entry = self._data.get(key)
         return max(0, int(entry[0] - time.monotonic())) if entry else 0
 
     def _evict_expired(self) -> None:
-        if len(self._data) < 10_000:
+        if len(self._data) < self._max_entries:
             return
         now = time.monotonic()
         for key in [k for k, (exp, _) in self._data.items() if exp <= now]:
+            del self._data[key]
+        # Still full: drop the oldest entries (dicts keep insertion order).
+        overflow = len(self._data) - self._max_entries + 1
+        for key in list(self._data)[: max(0, overflow)]:
             del self._data[key]
 
     async def close(self) -> None:
@@ -96,6 +109,9 @@ class RedisStore:
 
     async def count(self, key: str) -> int:
         return int(await self._redis.get(key) or 0)
+
+    async def decr(self, key: str) -> None:
+        await self._redis.decr(key)
 
     async def ttl(self, key: str) -> int:
         return max(0, int(await self._redis.ttl(key)))

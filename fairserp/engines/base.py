@@ -10,6 +10,8 @@ from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import Any
 
+import httpx
+
 from fairserp.config import Settings
 from fairserp.http import HttpPool
 
@@ -83,7 +85,10 @@ class Engine(ABC):
             missing = ", ".join(f"FAIRSERP_{a.upper()}" for a in self.required_settings)
             raise EngineError(self.name, f"engine is not configured, set {missing}", 503)
         raw = await self.fetch(request, ctx)
-        return self.parse(raw, request)
+        try:
+            return self.parse(raw, request)
+        except (KeyError, TypeError, ValueError, AttributeError, IndexError) as exc:
+            raise EngineError(self.name, "upstream returned an unexpected payload") from exc
 
     @abstractmethod
     async def fetch(self, request: SearchRequest, ctx: EngineContext) -> Any: ...
@@ -92,7 +97,12 @@ class Engine(ABC):
     def parse(self, raw: Any, request: SearchRequest) -> Fragments: ...
 
     async def get_json(self, ctx: EngineContext, method: str, url: str, **kwargs) -> Any:
-        response = await ctx.http.request(self.name, method, url, **kwargs)
+        try:
+            response = await ctx.http.request(self.name, method, url, **kwargs)
+        except httpx.TimeoutException as exc:
+            raise EngineError(self.name, "upstream timed out", 504) from exc
+        except httpx.HTTPError as exc:
+            raise EngineError(self.name, "upstream connection failed") from exc
         if response.status_code in (401, 403):
             raise EngineError(self.name, f"upstream refused the request ({response.status_code})")
         if response.status_code == 429:

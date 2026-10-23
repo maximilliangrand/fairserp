@@ -48,8 +48,11 @@ jobs:
         run: uv run --no-project --with serpapi python scripts/compat_check.py http://localhost:8000 ci-key
       - name: cached repeat is not counted, bad key is rejected
         run: |
+          before=$(curl -fsS "http://localhost:8000/account.json?api_key=ci-key" | jq .this_hour_searches)
           curl -fsS "http://localhost:8000/search.json?engine=wikipedia&q=Albert+Einstein&api_key=ci-key" > /dev/null
-          curl -fsS "http://localhost:8000/account.json?api_key=ci-key" | jq '{this_hour_searches, account_rate_limit_per_hour}'
+          after=$(curl -fsS "http://localhost:8000/account.json?api_key=ci-key" | jq .this_hour_searches)
+          echo "this_hour_searches before=$before after=$after"
+          test "$before" = "$after"
           test "$(curl -s -o /dev/null -w '%{http_code}' 'http://localhost:8000/search.json?q=x&api_key=wrong')" = 401
       - uses: actions/upload-artifact@v4
         if: always()

@@ -87,9 +87,9 @@ Every response says which engines actually answered:
 | Endpoint | Behavior |
 |---|---|
 | `GET /search`, `/search.json`, `/search.html`, `/search.md` | Search. Supports `output=json\|html\|md` |
-| `GET /searches/{id}`, `/searches/{id}.json\|.md\|.html` | Search archive, visible only to the key that ran the search |
+| `GET /searches/{id}`, `/searches/{id}.json\|.md\|.html` | Search archive, visible only to the key that ran the search (31 days; 1 hour for results from engines whose terms forbid caching) |
 | `GET /account`, `/account.json` | Usage for the calling key (`this_hour_searches`, `this_month_usage`, limit) |
-| `GET /locations.json?q=&limit=` | Location lookup (Nominatim). No key needed. SerpApi field names |
+| `GET /locations.json?q=&limit=` | Location lookup (Nominatim) with SerpApi field names. Unlike SerpApi it needs a key, to protect the shared Nominatim budget |
 | `GET /engines` | Engine catalog and status |
 | `GET /healthz` | Liveness |
 
@@ -102,7 +102,10 @@ The SerpApi semantics fairserp keeps:
 - An empty result set is HTTP 200 with `error` set and `organic_results_state: "Fully empty"`.
 - Cached responses (exact params, 1 hour default) are free and do not count against the hourly limit, and neither do failed searches.
 - `async=true` returns a `Processing` stub. You then poll `json_endpoint`.
-- `no_cache` together with `async` is rejected.
+- `no_cache` or `zero_trace` together with `async` is rejected.
+- A cache hit gets its own search id, archived for the caller.
+
+Security defaults: no keys configured means every request is rejected. `hl` and `gl` are validated because the language code selects an upstream host. Upstream redirects are not followed. API keys are redacted from access logs and stored only as hashes. Upstream timeouts and errors fall through to the next organic engine and never become bare 500s.
 
 ## Configuration
 
