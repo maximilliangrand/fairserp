@@ -1,0 +1,307 @@
+{
+ "category": "pizza restaurant",
+ "center": {
+  "lat": 40.6526006,
+  "lon": -73.9497211,
+  "box": [
+   40.550339,
+   40.739434,
+   -74.056688,
+   -73.832945
+  ]
+ },
+ "pois": [
+  {
+   "place_id": 358135344,
+   "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
+   "osm_type": "node",
+   "osm_id": 2553232123,
+   "lat": "40.5835614",
+   "lon": "-73.9509882",
+   "category": "amenity",
+   "type": "restaurant",
+   "place_rank": 30,
+   "importance": 9.175936522464359e-05,
+   "addresstype": "amenity",
+   "name": "V&S Pizza & Restaurant",
+   "display_name": "V&S Pizza & Restaurant, 1715, Emmons Avenue, Brooklyn, Kings County, New York, 11235, United States",
+   "address": {
+    "amenity": "V&S Pizza & Restaurant",
+    "house_number": "1715",
+    "road": "Emmons Avenue",
+    "suburb": "Brooklyn",
+    "city_district": "Kings County",
+    "city": "New York",
+    "state": "New York",
+    "ISO3166-2-lvl4": "US-NY",
+    "postcode": "11235",
+    "country": "United States",
+    "country_code": "us"
+   },
+   "extratags": {
+    "phone": "+1-718-332-7300",
+    "cuisine": "pizza",
+    "takeaway": "yes",
+    "opening_hours": "Mo-Th 11:00-23:00; Fr,Sa 11:00-24:00; Su 12:00-23:00",
+    "outdoor_seating": "yes"
+   },
+   "boundingbox": [
+    "40.5835114",
+    "40.5836114",
+    "-73.9510382",
+    "-73.9509382"
+   ]
+  },
+  {
+   "place_id": 359210811,
+   "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
+   "osm_type": "node",
+   "osm_id": 2704040263,
+   "lat": "40.7369797",
+   "lon": "-73.9842569",
+   "category": "amenity",
+   "type": "fast_food",
+   "place_rank": 30,
+   "importance": 9.175936522464359e-05,
+   "addresstype": "amenity",
+   "name": "Lunetta Pizza & Restaurant",
+   "display_name": "Lunetta Pizza & Restaurant, 245, 3rd Avenue, Gramercy, Manhattan Community Board 6, Manhattan, New York County, New York, 10010, United States",
+   "address": {
+    "amenity": "Lunetta Pizza & Restaurant",
+    "house_number": "245",
+    "road": "3rd Avenue",
+    "neighbourhood": "Gramercy",
+    "suburb": "Manhattan",
+    "city_district": "New York County",
+    "city": "New York",
+    "state": "New York",
+    "ISO3166-2-lvl4": "US-NY",
+    "postcode": "10010",
+    "country": "United States",
+    "country_code": "us"
+   },
+   "extratags": {
+    "phone": "+1-212-758-8100",
+    "cuisine": "pizza",
+    "website": "https://lunettanyc.com",
+    "delivery": "yes",
+    "takeaway": "yes",
+    "wheelchair": "yes",
+    "opening_hours": "Mo-We 10:00-02:00; Th 10:00-03:00; Fr-Sa 10:00-04:00; Su 10:00-02:00",
+    "toilets:wheelchair": "yes"
+   },
+   "boundingbox": [
+    "40.7369297",
+    "40.7370297",
+    "-73.9843069",
+    "-73.9842069"
+   ]
+  },
+  {
+   "place_id": 359140608,
+   "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
+   "osm_type": "node",
+   "osm_id": 9344724015,
+   "lat": "40.7132241",
+   "lon": "-73.8754193",
+   "category": "amenity",
+   "type": "restaurant",
+   "place_rank": 30,
+   "importance": 9.175936522464359e-05,
+   "addresstype": "amenity",
+   "name": "Rosas Pizza Restaurant",
+   "display_name": "Rosas Pizza Restaurant, 75-59, Metropolitan Avenue, Middle Village, Queens, Queens County, New York, 11379, United States",
+   "address": {
+    "amenity": "Rosas Pizza Restaurant",
+    "house_number": "75-59",
+    "road": "Metropolitan Avenue",
+    "neighbourhood": "Middle Village",
+    "suburb": "Queens",
+    "county": "Queens County",
+    "city": "New York",
+    "state": "New York",
+    "ISO3166-2-lvl4": "US-NY",
+    "postcode": "11379",
+    "country": "United States",
+    "country_code": "us"
+   },
+   "extratags": {
+    "cuisine": "pizza"
+   },
+   "boundingbox": [
+    "40.7131741",
+    "40.7132741",
+    "-73.8754693",
+    "-73.8753693"
+   ]
+  },
+  {
+   "place_id": 359061850,
+   "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
+   "osm_type": "node",
+   "osm_id": 2550064319,
+   "lat": "40.6878643",
+   "lon": "-73.9815791",
+   "category": "amenity",
+   "type": "fast_food",
+   "place_rank": 30,
+   "importance": 9.175936522464359e-05,
+   "addresstype": "amenity",
+   "name": "Angelica Pizza & Restaurant",
+   "display_name": "Angelica Pizza & Restaurant, 30, Nevins Street, Downtown Brooklyn, Brooklyn, Kings County, New York, 11217, United States",
+   "address": {
+    "amenity": "Angelica Pizza & Restaurant",
+    "house_number": "30",
+    "road": "Nevins Street",
+    "neighbourhood": "Downtown Brooklyn",
+    "suburb": "Brooklyn",
+    "city_district": "Kings County",
+    "city": "New York",
+    "state": "New York",
+    "ISO3166-2-lvl4": "US-NY",
+    "postcode": "11217",
+    "country": "United States",
+    "country_code": "us"
+   },
+   "extratags": {
+    "atm": "yes",
+    "phone": "+1-718-852-2728",
+    "cuisine": "pizza;american;breakfast",
+    "delivery": "yes",
+    "opening_hours": "Mo-Su 06:00+"
+   },
+   "boundingbox": [
+    "40.6878143",
+    "40.6879143",
+    "-73.9816291",
+    "-73.9815291"
+   ]
+  },
+  {
+   "place_id": 428806430,
+   "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
+   "osm_type": "node",
+   "osm_id": 9727488312,
+   "lat": "40.7325541",
+   "lon": "-73.8575755",
+   "category": "amenity",
+   "type": "fast_food",
+   "place_rank": 30,
+   "importance": 9.175936522464359e-05,
+   "addresstype": "amenity",
+   "name": "J & D Pizza and Restaurant",
+   "display_name": "J & D Pizza and Restaurant, 98-51, 63rd Road, Rego Park, Queens, Queens County, New York, 11374, United States",
+   "address": {
+    "amenity": "J & D Pizza and Restaurant",
+    "house_number": "98-51",
+    "road": "63rd Road",
+    "neighbourhood": "Rego Park",
+    "suburb": "Queens",
+    "county": "Queens County",
+    "city": "New York",
+    "state": "New York",
+    "ISO3166-2-lvl4": "US-NY",
+    "postcode": "11374",
+    "country": "United States",
+    "country_code": "us"
+   },
+   "extratags": {
+    "phone": "+1-718-275-4347",
+    "cuisine": "pizza;italian",
+    "website": "https://jndpizza.com/",
+    "catering": "yes",
+    "delivery": "yes",
+    "takeaway": "yes",
+    "opening_hours": "Mo-Su 11:00-23:00",
+    "diet:gluten_free": "yes"
+   },
+   "boundingbox": [
+    "40.7325041",
+    "40.7326041",
+    "-73.8576255",
+    "-73.8575255"
+   ]
+  },
+  {
+   "place_id": 358854073,
+   "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
+   "osm_type": "node",
+   "osm_id": 2545075845,
+   "lat": "40.6742912",
+   "lon": "-73.8787872",
+   "category": "amenity",
+   "type": "restaurant",
+   "place_rank": 30,
+   "importance": 9.175936522464359e-05,
+   "addresstype": "amenity",
+   "name": "J&D Pizza & Restaurant",
+   "display_name": "J&D Pizza & Restaurant, 2530, Pitkin Avenue, Cypress Hills, East New York, Brooklyn, Kings County, New York, 11208, United States",
+   "address": {
+    "amenity": "J&D Pizza & Restaurant",
+    "house_number": "2530",
+    "road": "Pitkin Avenue",
+    "neighbourhood": "Cypress Hills",
+    "quarter": "East New York",
+    "suburb": "Brooklyn",
+    "city_district": "Kings County",
+    "city": "New York",
+    "state": "New York",
+    "ISO3166-2-lvl4": "US-NY",
+    "postcode": "11208",
+    "country": "United States",
+    "country_code": "us"
+   },
+   "extratags": null,
+   "boundingbox": [
+    "40.6742412",
+    "40.6743412",
+    "-73.8788372",
+    "-73.8787372"
+   ]
+  },
+  {
+   "place_id": 358807250,
+   "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
+   "osm_type": "node",
+   "osm_id": 5503372394,
+   "lat": "40.6771548",
+   "lon": "-73.9726762",
+   "category": "amenity",
+   "type": "fast_food",
+   "place_rank": 30,
+   "importance": 9.175936522464359e-05,
+   "addresstype": "amenity",
+   "name": "Antonio's Pizza",
+   "display_name": "Antonio's Pizza, 318, Flatbush Avenue, Park Slope, Brooklyn, Kings County, New York, 11238, United States",
+   "address": {
+    "amenity": "Antonio's Pizza",
+    "house_number": "318",
+    "road": "Flatbush Avenue",
+    "neighbourhood": "Park Slope",
+    "suburb": "Brooklyn",
+    "city_district": "Kings County",
+    "city": "New York",
+    "state": "New York",
+    "ISO3166-2-lvl4": "US-NY",
+    "postcode": "11238",
+    "country": "United States",
+    "country_code": "us"
+   },
+   "extratags": {
+    "atm": "yes",
+    "phone": "+1-718-398-2300",
+    "cuisine": "pizza",
+    "toilets": "no",
+    "delivery": "yes",
+    "takeaway": "yes",
+    "opening_hours": "Mo-Su 11:00-23:00"
+   },
+   "boundingbox": [
+    "40.6771048",
+    "40.6772048",
+    "-73.9727262",
+    "-73.9726262"
+   ]
+  }
+ ]
+}
