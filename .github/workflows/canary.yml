@@ -1,0 +1,34 @@
+name: canary
+
+# Informational, never a required check: live queries against real keyless providers.
+# Upstream outages or exhausted per-IP caps show up here without blocking contributions.
+
+on:
+  push:
+  schedule:
+    - cron: "17 6 * * *"
+  workflow_dispatch:
+
+jobs:
+  live:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    env:
+      FAIRSERP_API_KEYS: canary-key
+      FAIRSERP_OPT_IN: firecrawl
+      FAIRSERP_SERPAPI_ENGINES: google:auto,google_maps:openstreetmap
+      FAIRSERP_PUBLIC_URL: http://localhost:8000
+    steps:
+      - uses: actions/checkout@v4
+      - name: docker compose up (live providers)
+        run: docker compose up -d --build --wait --wait-timeout 180
+      - name: engine=google via the migration alias (Firecrawl opted in, Wikidata, DDG)
+        run: |
+          curl -sS -H "Authorization: Bearer canary-key" "http://localhost:8000/search.json?engine=google&q=einstein" -o google.json
+          jq '{meta: .search_metadata.fairserp, organic_results: .organic_results[0:3], knowledge_graph}' google.json
+      - name: engine=wikipedia (open data, strict profile)
+        run: curl -sS -H "Authorization: Bearer canary-key" "http://localhost:8000/v1/search?q=Albert+Einstein&engine=wikipedia" | jq '{status, providers, results: .results[0:2]}'
+      - name: local results (OpenStreetMap)
+        run: curl -sS -H "Authorization: Bearer canary-key" "http://localhost:8000/search.json?engine=google_maps&q=coffee&location=Austin,+Texas" | jq '{meta: .search_metadata.fairserp.status, local_results: .local_results[0:3]}'
+      - if: always()
+        run: docker compose logs fairserp | tail -50; docker compose down -v
