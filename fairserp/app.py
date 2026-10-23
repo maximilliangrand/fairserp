@@ -28,12 +28,13 @@ logger = logging.getLogger("fairserp")
 
 class ApiError(Exception):
     def __init__(self, status: int, message: str, code: str = "error",
-                 retry_after: int | None = None) -> None:
+                 retry_after: int | None = None, details: list[dict] | None = None) -> None:
         super().__init__(message)
         self.status = status
         self.message = message
         self.code = code
         self.retry_after = retry_after
+        self.details = details or []
 
 
 @dataclass
@@ -89,6 +90,8 @@ def create_app(settings: Settings | None = None,
         headers = {"Retry-After": str(exc.retry_after)} if exc.retry_after else None
         if request.url.path.startswith("/v1/"):
             body: dict[str, Any] = {"error": {"code": exc.code, "message": exc.message}}
+            if exc.details:
+                body["error"]["details"] = exc.details
         else:
             body = {"error": exc.message}
         return JSONResponse(body, status_code=exc.status, headers=headers)
@@ -164,7 +167,7 @@ async def execute(services: Services, query: SearchQuery, requested_engine: str,
     try:
         plan = services.searcher.plan(query)
     except PlanError as exc:
-        raise ApiError(exc.status, exc.message, "plan_rejected") from exc
+        raise ApiError(exc.status, exc.message, exc.code, details=exc.details) from exc
     if run_async:
         forbidden = services.searcher.storage_forbidden(plan)
         if forbidden:

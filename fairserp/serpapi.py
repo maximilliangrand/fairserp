@@ -163,6 +163,7 @@ def render(outcome: SearchOutcome, base: str, params: dict[str, str],
                           for p in outcome.providers],
             "params": {"applied": applied, "ignored": ignored},
             "attribution": outcome.attribution,
+            "notes": outcome.notes,
             "retention": outcome.retention.model_dump(),
             "archived": archived,
         },
@@ -284,7 +285,7 @@ def _place(position: int, place) -> dict[str, Any]:
     }
     optional = {"phone": place.phone, "hours": place.hours, "rating": place.rating,
                 "reviews": place.reviews, "description": place.description,
-                "fairserp_distance_m": place.distance_m}
+                "fairserp_distance_m": place.distance_m, "fairserp_in_area": place.in_area}
     data.update({k: v for k, v in optional.items() if v is not None})
     if place.website:
         data["links"] = {"website": place.website}

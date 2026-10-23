@@ -227,3 +227,44 @@ def test_capability_matrix_is_current():
                             capture_output=True, text=True,
                             cwd=FIXTURES.parent.parent)
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+def _area_payload(pois):
+    square = {"type": "Polygon", "coordinates": [[[0, 0], [0, 1], [1, 1], [1, 0], [0, 0]]]}
+    area = {"name": "Square", "lat": 0.5, "lon": 0.5, "box": [0, 1, 0, 1], "polygon": square}
+    return {"category": "cafe", "center": area, "pois": pois}
+
+
+def _cafe(name, lat, lon, **address):
+    return {"name": name, "lat": str(lat), "lon": str(lon), "category": "amenity",
+            "type": "cafe", "osm_type": "node", "osm_id": 1, "address": address}
+
+
+def test_local_results_respect_the_area_boundary_and_report_widening():
+    query = SearchQuery(q="coffee", location="Square", vertical="local")
+    inside = [_cafe(f"in{i}", 0.5, 0.5 + i / 100) for i in range(3)]
+    out = OpenStreetMapEngine().parse(_area_payload(inside + [_cafe("out", 1.2, 0.5)]), query)
+    assert [p.name for p in out.places] == ["in0", "in1", "in2"] and not out.notes
+    assert out.area.has_boundary and out.area.name == "Square"
+
+    sparse = OpenStreetMapEngine().parse(_area_payload(
+        [_cafe("in0", 0.5, 0.5), _cafe("out", 1.2, 0.5)]), query)
+    assert [(p.name, p.in_area) for p in sparse.places] == [("in0", True), ("out", False)]
+    assert "widened" in sparse.notes[0]
+
+
+def test_addresses_name_the_borough_without_repeating_the_city():
+    raw = _area_payload([_cafe("Cafe", 0.5, 0.5, house_number="30", road="Nevins Street",
+                               neighbourhood="Downtown Brooklyn", suburb="Brooklyn",
+                               city="New York", state="New York", postcode="11217")])
+    out = OpenStreetMapEngine().parse(raw, SearchQuery(q="coffee", location="Square",
+                                                       vertical="local"))
+    assert out.places[0].address == (
+        "30 Nevins Street, Downtown Brooklyn, Brooklyn, New York 11217")
+
+
+def test_brooklyn_fixture_has_no_manhattan_or_queens_places():
+    query = SearchQuery(q="pizza", location="Brooklyn, New York", vertical="local")
+    out = OpenStreetMapEngine().parse(load("openstreetmap_pizza.json"), query)
+    assert out.places and all("Brooklyn" in p.address for p in out.places)
+    assert all(p.in_area for p in out.places)

@@ -46,8 +46,8 @@ def compact(outcome: SearchOutcome) -> dict[str, Any]:
     }
     if outcome.places:
         data["places"] = [{"name": p.name, "category": p.category, "address": p.address,
-                           "distance_m": p.distance_m, "website": p.website,
-                           "hours": p.hours} for p in outcome.places]
+                           "distance_m": p.distance_m, "in_area": p.in_area,
+                           "website": p.website, "hours": p.hours} for p in outcome.places]
     if outcome.entity:
         data["entity"] = {"title": outcome.entity.title, "type": outcome.entity.type,
                           "description": outcome.entity.description[:400],
@@ -62,6 +62,8 @@ def compact(outcome: SearchOutcome) -> dict[str, Any]:
         data["degraded"] = problems
     if outcome.params.ignored:
         data["ignored_params"] = outcome.params.ignored
+    if outcome.notes:
+        data["notes"] = outcome.notes
     if outcome.attribution:
         data["attribution"] = outcome.attribution
     if outcome.error and outcome.status.value != "success":

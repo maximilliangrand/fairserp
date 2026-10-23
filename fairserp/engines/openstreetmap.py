@@ -16,7 +16,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from fairserp.engines.base import Engine, EngineContext, Role, require
-from fairserp.model import EngineOutput, Place, SearchQuery
+from fairserp.model import Area, EngineOutput, Place, SearchQuery
 from fairserp.rights import CommercialUse, Provenance, Rights
 
 GEOCODE_TTL = 7 * 24 * 3600
@@ -111,34 +111,43 @@ class OpenStreetMapEngine(Engine):
             return {"category": None}
         category, place = request
         base = f"{ctx.settings.nominatim_url.rstrip('/')}/search"
-        center = await self._geocode(ctx, base, place, query.language)
-        if center is None:
+        area = await self._geocode(ctx, base, place, query.language)
+        if area is None:
             return {"category": category.search, "center": None, "pois": []}
         params: dict[str, Any] = {
             "q": category.search, "format": "jsonv2", "limit": self.max_depth, "bounded": 1,
-            "viewbox": _viewbox(center), "addressdetails": 1, "extratags": 1,
+            "viewbox": _viewbox(area), "addressdetails": 1, "extratags": 1,
         }
         if query.language:
             params["accept-language"] = query.language
         pois = await self.get_json(ctx, "GET", base, params=params)
-        return {"category": category.search, "center": center, "pois": pois}
+        return {"category": category.search, "center": area, "pois": pois}
 
     async def _geocode(self, ctx: EngineContext, base: str, place: str,
                        language: str | None) -> dict[str, Any] | None:
-        key = f"geo:{place.casefold()}"
+        key = f"geo2:{place.casefold()}:{language or ''}"
         if ctx.cache is not None and (cached := await ctx.cache.get_json(key)) is not None:
             return cached or None
-        params = {"q": place, "format": "jsonv2", "limit": 1}
+        # A simplified boundary polygon (about 1 KB for a borough) lets results be checked
+        # against the named area itself, not just its bounding rectangle.
+        params = {"q": place, "format": "jsonv2", "limit": 1, "polygon_geojson": 1,
+                  "polygon_threshold": 0.002}
         if language:
             params["accept-language"] = language
         hits = await self.get_json(ctx, "GET", base, params=params)
-        center = None
+        area = None
         if hits:
-            box = [float(v) for v in hits[0]["boundingbox"]]
-            center = {"lat": float(hits[0]["lat"]), "lon": float(hits[0]["lon"]), "box": box}
+            hit = hits[0]
+            shape = hit.get("geojson") or {}
+            area = {
+                "name": hit.get("name") or place.split(",")[0],
+                "lat": float(hit["lat"]), "lon": float(hit["lon"]),
+                "box": [float(v) for v in hit["boundingbox"]],
+                "polygon": shape if shape.get("type") in ("Polygon", "MultiPolygon") else None,
+            }
         if ctx.cache is not None:
-            await ctx.cache.set_json(key, center or {}, GEOCODE_TTL)
-        return center
+            await ctx.cache.set_json(key, area or {}, GEOCODE_TTL)
+        return area
 
     def parse(self, raw: dict[str, Any], query: SearchQuery) -> EngineOutput:
         require(isinstance(raw, dict) and "category" in raw, "not a local lookup result")
@@ -146,20 +155,42 @@ class OpenStreetMapEngine(Engine):
         if request is None or not raw.get("center"):
             return EngineOutput()
         category, _ = request
-        center = raw["center"]
+        area = raw["center"]
         require(isinstance(raw.get("pois"), list), "missing POI list")
-        places = [_place(item, category, center) for item in raw["pois"]
+        places = [_place(item, category, area) for item in raw["pois"]
                   if item.get("name") and _matches(item, category)]
-        places.sort(key=lambda p: p.distance_m or 0)
-        page = places[query.offset: query.offset + query.num]
-        for position, place in enumerate(page):
-            place.place_id = place.place_id or f"osm:{position}"
-        return EngineOutput(places=page, has_more=len(places) > query.offset + query.num)
+        inside = sorted((p for p in places if p.in_area), key=lambda p: p.distance_m or 0)
+        outside = sorted((p for p in places if not p.in_area), key=lambda p: p.distance_m or 0)
+        name = area.get("name", "the area")
+        notes: list[str] = []
+        wanted = min(3, query.num)
+        if len(inside) >= wanted or not outside:
+            ranked = inside
+        else:
+            ranked = inside + outside
+            notes.append(f"Only {len(inside)} {category.label.lower()} result"
+                         f"{'' if len(inside) == 1 else 's'} inside {name}; widened to nearby "
+                         f"places outside its boundary (marked in_area: false).")
+        if not area.get("polygon"):
+            notes.append(f"OpenStreetMap has no boundary for {name}; searched its bounding "
+                         "box instead.")
+        page = ranked[query.offset: query.offset + query.num]
+        south, north, west, east = area["box"]
+        return EngineOutput(
+            places=page, has_more=len(ranked) > query.offset + query.num, notes=notes,
+            area=Area(name=name, latitude=area["lat"], longitude=area["lon"],
+                      bbox=[south, north, west, east], has_boundary=bool(area.get("polygon"))),
+        )
 
 
-def _viewbox(center: dict[str, Any]) -> str:
-    south, north, west, east = center["box"]
-    lat, lon = center["lat"], center["lon"]
+def _viewbox(area: dict[str, Any]) -> str:
+    """The area's bounding box plus a margin (so widening has candidates), clipped to city
+    scale around the centre."""
+    south, north, west, east = area["box"]
+    lat, lon = area["lat"], area["lon"]
+    margin_lat, margin_lon = (north - south) * 0.15, (east - west) * 0.15
+    south, north = south - margin_lat, north + margin_lat
+    west, east = west - margin_lon, east + margin_lon
     south, north = max(south, lat - MAX_BOX_DEGREES), min(north, lat + MAX_BOX_DEGREES)
     west, east = max(west, lon - MAX_BOX_DEGREES), min(east, lon + MAX_BOX_DEGREES)
     if north - south < 0.02:
@@ -167,6 +198,25 @@ def _viewbox(center: dict[str, Any]) -> str:
     if east - west < 0.02:
         west, east = lon - 0.02, lon + 0.02
     return f"{west},{north},{east},{south}"
+
+
+def in_area(lat: float, lon: float, area: dict[str, Any]) -> bool:
+    polygon = area.get("polygon")
+    if not polygon:
+        south, north, west, east = area["box"]
+        return south <= lat <= north and west <= lon <= east
+    shapes = [polygon["coordinates"]] if polygon["type"] == "Polygon" else polygon["coordinates"]
+    return any(_in_rings(lon, lat, rings) for rings in shapes)
+
+
+def _in_rings(x: float, y: float, rings: list) -> bool:
+    """Even-odd ray casting over the outer ring and its holes."""
+    inside = False
+    for ring in rings:
+        for (x1, y1), (x2, y2) in zip(ring, ring[1:] + ring[:1], strict=True):
+            if (y1 > y) != (y2 > y) and x < (x2 - x1) * (y - y1) / (y2 - y1) + x1:
+                inside = not inside
+    return inside
 
 
 def _matches(item: dict[str, Any], category: Category) -> bool:
@@ -181,7 +231,7 @@ def _matches(item: dict[str, Any], category: Category) -> bool:
     return all(tags.get(key) == value for key, value in category.tags.items())
 
 
-def _place(item: dict[str, Any], category: Category, center: dict[str, Any]) -> Place:
+def _place(item: dict[str, Any], category: Category, area: dict[str, Any]) -> Place:
     tags = item.get("extratags") or {}
     lat, lon = float(item["lat"]), float(item["lon"])
     cuisine = tags.get("cuisine")
@@ -190,7 +240,8 @@ def _place(item: dict[str, Any], category: Category, center: dict[str, Any]) -> 
         category=category.label,
         address=_address(item.get("address") or {}) or item.get("display_name", ""),
         latitude=lat, longitude=lon,
-        distance_m=int(_haversine(center["lat"], center["lon"], lat, lon)),
+        distance_m=int(_haversine(area["lat"], area["lon"], lat, lon)),
+        in_area=in_area(lat, lon, area),
         phone=tags.get("phone") or tags.get("contact:phone"),
         website=tags.get("website") or tags.get("contact:website"),
         hours=tags.get("opening_hours"),
@@ -200,11 +251,20 @@ def _place(item: dict[str, Any], category: Category, center: dict[str, Any]) -> 
 
 
 def _address(address: dict[str, str]) -> str:
+    """Street, neighbourhood, borough or district, city, region and postcode, without
+    repeating a name (NYC addresses say "New York" for both city and state)."""
     street = " ".join(p for p in (address.get("house_number"), address.get("road")) if p)
-    city = address.get("city") or address.get("town") or address.get("village") or address.get(
-        "suburb")
+    local = address.get("neighbourhood") or address.get("quarter")
+    borough = address.get("suburb") or address.get("city_district")
+    city = address.get("city") or address.get("town") or address.get("village")
+    if city and city == address.get("state"):
+        city = None  # "New York, New York 11238" says the same name twice
     region = " ".join(p for p in (address.get("state"), address.get("postcode")) if p)
-    return ", ".join(p for p in (street, city, region) if p)
+    parts: list[str] = []
+    for part in (street, local, borough, city, region):
+        if part and part not in parts:
+            parts.append(part)
+    return ", ".join(parts)
 
 
 def _haversine(lat1: float, lon1: float, lat2: float, lon2: float) -> float:

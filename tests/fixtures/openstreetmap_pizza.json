@@ -1,6 +1,7 @@
 {
  "category": "pizza restaurant",
  "center": {
+  "name": "Brooklyn",
   "lat": 40.6526006,
   "lon": -73.9497211,
   "box": [
@@ -8,11 +9,202 @@
    40.739434,
    -74.056688,
    -73.832945
-  ]
+  ],
+  "polygon": {
+   "type": "Polygon",
+   "coordinates": [
+    [
+     [
+      -74.056688,
+      40.627039
+     ],
+     [
+      -74.041565,
+      40.602996
+     ],
+     [
+      -74.035112,
+      40.578188
+     ],
+     [
+      -74.038053,
+      40.550339
+     ],
+     [
+      -73.878953,
+      40.574447
+     ],
+     [
+      -73.849784,
+      40.588196
+     ],
+     [
+      -73.83424,
+      40.60679
+     ],
+     [
+      -73.832945,
+      40.628979
+     ],
+     [
+      -73.84803,
+      40.643834
+     ],
+     [
+      -73.855139,
+      40.642871
+     ],
+     [
+      -73.863538,
+      40.658296
+     ],
+     [
+      -73.857572,
+      40.659913
+     ],
+     [
+      -73.85841,
+      40.663271
+     ],
+     [
+      -73.855698,
+      40.663712
+     ],
+     [
+      -73.857633,
+      40.671655
+     ],
+     [
+      -73.860382,
+      40.671241
+     ],
+     [
+      -73.866026,
+      40.681917
+     ],
+     [
+      -73.869071,
+      40.695297
+     ],
+     [
+      -73.896477,
+      40.682316
+     ],
+     [
+      -73.905974,
+      40.694229
+     ],
+     [
+      -73.904459,
+      40.695804
+     ],
+     [
+      -73.921898,
+      40.709393
+     ],
+     [
+      -73.929206,
+      40.727742
+     ],
+     [
+      -73.955248,
+      40.739434
+     ],
+     [
+      -73.962547,
+      40.736437
+     ],
+     [
+      -73.961722,
+      40.72487
+     ],
+     [
+      -73.9679043,
+      40.7173184
+     ],
+     [
+      -73.969312,
+      40.705475
+     ],
+     [
+      -73.97226,
+      40.709102
+     ],
+     [
+      -73.9959947,
+      40.7037725
+     ],
+     [
+      -74.0082907,
+      40.6864417
+     ],
+     [
+      -74.019577,
+      40.679654
+     ],
+     [
+      -74.035443,
+      40.685125
+     ],
+     [
+      -74.055766,
+      40.651475
+     ],
+     [
+      -74.056688,
+      40.627039
+     ]
+    ]
+   ]
+  }
  },
  "pois": [
   {
-   "place_id": 358135344,
+   "place_id": 360732968,
+   "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
+   "osm_type": "way",
+   "osm_id": 280375133,
+   "lat": "40.7485990",
+   "lon": "-73.9130111",
+   "category": "amenity",
+   "type": "restaurant",
+   "place_rank": 30,
+   "importance": 9.175936522464359e-05,
+   "addresstype": "amenity",
+   "name": "Donato's Restaurant & Pizza",
+   "display_name": "Donato's Restaurant & Pizza, 50-22, 39th Avenue, Sunnyside Gardens, Woodside, Queens, Queens County, New York, 11377, United States",
+   "address": {
+    "amenity": "Donato's Restaurant & Pizza",
+    "house_number": "50-22",
+    "road": "39th Avenue",
+    "neighbourhood": "Sunnyside Gardens",
+    "quarter": "Woodside",
+    "suburb": "Queens",
+    "county": "Queens County",
+    "city": "New York",
+    "state": "New York",
+    "ISO3166-2-lvl4": "US-NY",
+    "postcode": "11377",
+    "country": "United States",
+    "country_code": "us"
+   },
+   "extratags": {
+    "phone": "+1 718-507-4591",
+    "height": "6.7",
+    "cuisine": "pizza;italian",
+    "building": "yes",
+    "nycdoitt:bin": "4000923",
+    "not:brand:wikidata": "Q1240741"
+   },
+   "boundingbox": [
+    "40.7484598",
+    "40.7486992",
+    "-73.9130713",
+    "-73.9129582"
+   ]
+  },
+  {
+   "place_id": 357216120,
    "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
    "osm_type": "node",
    "osm_id": 2553232123,
@@ -53,7 +245,125 @@
    ]
   },
   {
-   "place_id": 359210811,
+   "place_id": 359833482,
+   "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
+   "osm_type": "node",
+   "osm_id": 9344724015,
+   "lat": "40.7132241",
+   "lon": "-73.8754193",
+   "category": "amenity",
+   "type": "restaurant",
+   "place_rank": 30,
+   "importance": 9.175936522464359e-05,
+   "addresstype": "amenity",
+   "name": "Rosas Pizza Restaurant",
+   "display_name": "Rosas Pizza Restaurant, 75-59, Metropolitan Avenue, Middle Village, Queens, Queens County, New York, 11379, United States",
+   "address": {
+    "amenity": "Rosas Pizza Restaurant",
+    "house_number": "75-59",
+    "road": "Metropolitan Avenue",
+    "neighbourhood": "Middle Village",
+    "suburb": "Queens",
+    "county": "Queens County",
+    "city": "New York",
+    "state": "New York",
+    "ISO3166-2-lvl4": "US-NY",
+    "postcode": "11379",
+    "country": "United States",
+    "country_code": "us"
+   },
+   "extratags": {
+    "cuisine": "pizza"
+   },
+   "boundingbox": [
+    "40.7131741",
+    "40.7132741",
+    "-73.8754693",
+    "-73.8753693"
+   ]
+  },
+  {
+   "place_id": 356049106,
+   "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
+   "osm_type": "node",
+   "osm_id": 12173774617,
+   "lat": "40.5975023",
+   "lon": "-74.0841629",
+   "category": "amenity",
+   "type": "restaurant",
+   "place_rank": 30,
+   "importance": 9.175936522464359e-05,
+   "addresstype": "amenity",
+   "name": "Brooklyn's Finest Pizza & Restaurant",
+   "display_name": "Brooklyn's Finest Pizza & Restaurant, 1250, Hylan Boulevard, Old Town Station, Staten Island, Richmond County, New York, 10305, United States",
+   "address": {
+    "amenity": "Brooklyn's Finest Pizza & Restaurant",
+    "house_number": "1250",
+    "road": "Hylan Boulevard",
+    "neighbourhood": "Old Town Station",
+    "suburb": "Staten Island",
+    "city": "New York",
+    "state": "New York",
+    "ISO3166-2-lvl4": "US-NY",
+    "postcode": "10305",
+    "country": "United States",
+    "country_code": "us"
+   },
+   "extratags": {
+    "level": "0;1",
+    "cuisine": "pizza"
+   },
+   "boundingbox": [
+    "40.5974523",
+    "40.5975523",
+    "-74.0842129",
+    "-74.0841129"
+   ]
+  },
+  {
+   "place_id": 360299480,
+   "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
+   "osm_type": "node",
+   "osm_id": 2550064319,
+   "lat": "40.6878643",
+   "lon": "-73.9815791",
+   "category": "amenity",
+   "type": "fast_food",
+   "place_rank": 30,
+   "importance": 9.175936522464359e-05,
+   "addresstype": "amenity",
+   "name": "Angelica Pizza & Restaurant",
+   "display_name": "Angelica Pizza & Restaurant, 30, Nevins Street, Downtown Brooklyn, Brooklyn, Kings County, New York, 11217, United States",
+   "address": {
+    "amenity": "Angelica Pizza & Restaurant",
+    "house_number": "30",
+    "road": "Nevins Street",
+    "neighbourhood": "Downtown Brooklyn",
+    "suburb": "Brooklyn",
+    "city_district": "Kings County",
+    "city": "New York",
+    "state": "New York",
+    "ISO3166-2-lvl4": "US-NY",
+    "postcode": "11217",
+    "country": "United States",
+    "country_code": "us"
+   },
+   "extratags": {
+    "atm": "yes",
+    "phone": "+1-718-852-2728",
+    "cuisine": "pizza;american;breakfast",
+    "delivery": "yes",
+    "opening_hours": "Mo-Su 06:00+"
+   },
+   "boundingbox": [
+    "40.6878143",
+    "40.6879143",
+    "-73.9816291",
+    "-73.9815291"
+   ]
+  },
+  {
+   "place_id": 359164999,
    "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
    "osm_type": "node",
    "osm_id": 2704040263,
@@ -98,87 +408,7 @@
    ]
   },
   {
-   "place_id": 359140608,
-   "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
-   "osm_type": "node",
-   "osm_id": 9344724015,
-   "lat": "40.7132241",
-   "lon": "-73.8754193",
-   "category": "amenity",
-   "type": "restaurant",
-   "place_rank": 30,
-   "importance": 9.175936522464359e-05,
-   "addresstype": "amenity",
-   "name": "Rosas Pizza Restaurant",
-   "display_name": "Rosas Pizza Restaurant, 75-59, Metropolitan Avenue, Middle Village, Queens, Queens County, New York, 11379, United States",
-   "address": {
-    "amenity": "Rosas Pizza Restaurant",
-    "house_number": "75-59",
-    "road": "Metropolitan Avenue",
-    "neighbourhood": "Middle Village",
-    "suburb": "Queens",
-    "county": "Queens County",
-    "city": "New York",
-    "state": "New York",
-    "ISO3166-2-lvl4": "US-NY",
-    "postcode": "11379",
-    "country": "United States",
-    "country_code": "us"
-   },
-   "extratags": {
-    "cuisine": "pizza"
-   },
-   "boundingbox": [
-    "40.7131741",
-    "40.7132741",
-    "-73.8754693",
-    "-73.8753693"
-   ]
-  },
-  {
-   "place_id": 359061850,
-   "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
-   "osm_type": "node",
-   "osm_id": 2550064319,
-   "lat": "40.6878643",
-   "lon": "-73.9815791",
-   "category": "amenity",
-   "type": "fast_food",
-   "place_rank": 30,
-   "importance": 9.175936522464359e-05,
-   "addresstype": "amenity",
-   "name": "Angelica Pizza & Restaurant",
-   "display_name": "Angelica Pizza & Restaurant, 30, Nevins Street, Downtown Brooklyn, Brooklyn, Kings County, New York, 11217, United States",
-   "address": {
-    "amenity": "Angelica Pizza & Restaurant",
-    "house_number": "30",
-    "road": "Nevins Street",
-    "neighbourhood": "Downtown Brooklyn",
-    "suburb": "Brooklyn",
-    "city_district": "Kings County",
-    "city": "New York",
-    "state": "New York",
-    "ISO3166-2-lvl4": "US-NY",
-    "postcode": "11217",
-    "country": "United States",
-    "country_code": "us"
-   },
-   "extratags": {
-    "atm": "yes",
-    "phone": "+1-718-852-2728",
-    "cuisine": "pizza;american;breakfast",
-    "delivery": "yes",
-    "opening_hours": "Mo-Su 06:00+"
-   },
-   "boundingbox": [
-    "40.6878143",
-    "40.6879143",
-    "-73.9816291",
-    "-73.9815291"
-   ]
-  },
-  {
-   "place_id": 428806430,
+   "place_id": 428242784,
    "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
    "osm_type": "node",
    "osm_id": 9727488312,
@@ -223,7 +453,7 @@
    ]
   },
   {
-   "place_id": 358854073,
+   "place_id": 358942012,
    "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
    "osm_type": "node",
    "osm_id": 2545075845,
@@ -260,7 +490,7 @@
    ]
   },
   {
-   "place_id": 358807250,
+   "place_id": 360578832,
    "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
    "osm_type": "node",
    "osm_id": 5503372394,
@@ -301,6 +531,51 @@
     "40.6772048",
     "-73.9727262",
     "-73.9726262"
+   ]
+  },
+  {
+   "place_id": 359817917,
+   "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
+   "osm_type": "node",
+   "osm_id": 2844942216,
+   "lat": "40.7411757",
+   "lon": "-73.9180201",
+   "category": "amenity",
+   "type": "fast_food",
+   "place_rank": 30,
+   "importance": 9.175936522464359e-05,
+   "addresstype": "amenity",
+   "name": "Giovanni's Mexican Food & Pizza",
+   "display_name": "Giovanni's Mexican Food & Pizza, 45-59, 47th Street, Queens, Queens County, New York, 11377, United States",
+   "address": {
+    "amenity": "Giovanni's Mexican Food & Pizza",
+    "house_number": "45-59",
+    "road": "47th Street",
+    "suburb": "Queens",
+    "county": "Queens County",
+    "city": "New York",
+    "state": "New York",
+    "ISO3166-2-lvl4": "US-NY",
+    "postcode": "11377",
+    "country": "United States",
+    "country_code": "us"
+   },
+   "extratags": {
+    "fax": "+1 718-609-1631",
+    "phone": "+1 718-729-3572",
+    "cuisine": "italian;mexican",
+    "website": "https://www.giovannispizzarestaurant.com",
+    "delivery": "yes",
+    "takeaway": "yes",
+    "drink:beer": "yes",
+    "drink:wine": "yes",
+    "opening_hours": "Mo-Su 10:00-23:00"
+   },
+   "boundingbox": [
+    "40.7411257",
+    "40.7412257",
+    "-73.9180701",
+    "-73.9179701"
    ]
   }
  ]
