@@ -17,6 +17,7 @@ from fairserp.archive import Archive
 from fairserp.config import KeyLimits, Settings, get_settings
 from fairserp.core import PlanError, Searcher
 from fairserp.engines import Engine, EngineError, build_registry
+from fairserp.fetch import Fetcher, FetchError
 from fairserp.http import HttpPool
 from fairserp.limits import QuotaExceeded, Quotas, owner_id
 from fairserp.model import OutcomeStatus, SearchOutcome, SearchQuery
@@ -45,6 +46,7 @@ class Services:
     searcher: Searcher
     quotas: Quotas
     archive: Archive
+    fetcher: Fetcher
     background: set[asyncio.Task] = field(default_factory=set)
 
 
@@ -63,12 +65,14 @@ def create_app(settings: Settings | None = None,
             settings=settings, cache=cache, state=state, http=http, registry=engines,
             searcher=Searcher(settings, engines, http, cache, state),
             quotas=Quotas(state), archive=Archive(cache, settings.archive_ttl_seconds),
+            fetcher=Fetcher(settings, cache),
         )
         if not settings.public_url:
             logger.warning("FAIRSERP_PUBLIC_URL is unset; self links use each request's host")
         yield
         services: Services = app.state.services
         await asyncio.gather(*services.background, return_exceptions=True)
+        await services.fetcher.close()
         await http.close()
         await cache.close()
         await state.close()
@@ -422,6 +426,29 @@ def _register(app: FastAPI) -> None:
                 for e in services.registry.values()
             ],
         }
+
+    @app.get("/v1/fetch", tags=["native"], summary="Read one public page as cited evidence")
+    async def fetch_page(request: Request,
+                         url: Annotated[str, Query(max_length=2048)],
+                         question: Annotated[str, Query(max_length=500)] = "",
+                         api_key: Annotated[str, Depends(authenticate)] = "") -> JSONResponse:
+        """Respects robots.txt, refuses non-public addresses, caps size and time.
+        Counts against the key's quota like a search; refused or failed fetches are free."""
+        services = _services(request)
+        try:
+            reservation = await services.quotas.reserve(api_key,
+                                                        _limits(api_key, services.settings))
+        except QuotaExceeded as exc:
+            raise ApiError(429, exc.message, "quota_exceeded", exc.retry_after) from exc
+        try:
+            evidence = await services.fetcher.fetch(url, question)
+        except FetchError as exc:
+            await services.quotas.release(reservation)
+            raise ApiError(exc.status, exc.message, "fetch_refused") from exc
+        except Exception:
+            await services.quotas.release(reservation)
+            raise
+        return JSONResponse(evidence.as_dict())
 
     @app.get("/healthz", tags=["ops"])
     async def healthz() -> dict[str, str]:
