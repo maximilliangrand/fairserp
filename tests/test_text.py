@@ -51,3 +51,7 @@ def test_rrf_dedups_and_orders_by_agreement():
     assert [r.canonical_url for r in fused] == ["https://x.org/2", "https://x.org/1",
                                                 "https://x.org/3"]
     assert {s.engine for s in fused[0].sources} == {"a", "b"}
+
+
+def test_clean_text_unescapes_html_entities():
+    assert clean_text("Einstein&#039;s <b>fourth</b>-great &amp; co") == "Einstein's fourth-great & co"

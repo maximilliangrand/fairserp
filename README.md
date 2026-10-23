@@ -37,6 +37,15 @@ fairserp refuses to guess and tells you how to proceed:
 | Your own SearXNG | `FAIRSERP_SEARXNG_URL=... FAIRSERP_OPT_IN=searxng` (status follows its engines) |
 | A noncommercial deployment | `FAIRSERP_NONCOMMERCIAL_DEPLOYMENT=true` enables Marginalia's free index (CC-BY-NC-SA) |
 
+## Playground
+
+`GET /` serves a playground: run a query, see each result's provider, rank and provenance,
+the provider status strip, applied and ignored params, retention and attribution, and copy
+the same search as curl, Python or an MCP config. It makes no third-party requests and runs
+under a hash-pinned Content-Security-Policy.
+
+![fairserp playground](docs/img/playground.png)
+
 ## The native API
 
 `GET /v1/search?q=...` or `POST /v1/search` with a JSON body. Params: `engine` (`auto` or a

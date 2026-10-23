@@ -12,7 +12,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse, Response
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from fairserp import __version__, locations, logs, render, restrictor, serpapi
+from fairserp import __version__, locations, logs, playground, render, restrictor, serpapi
 from fairserp.archive import Archive
 from fairserp.config import KeyLimits, Settings, get_settings
 from fairserp.core import PlanError, Searcher
@@ -463,6 +463,13 @@ def _register(app: FastAPI) -> None:
             await services.quotas.release(reservation)
             raise
         return JSONResponse(evidence.as_dict())
+
+    @app.get("/", include_in_schema=False)
+    async def playground_page() -> HTMLResponse:
+        html, csp = playground.page()
+        return HTMLResponse(html, headers={"Content-Security-Policy": csp,
+                                           "X-Content-Type-Options": "nosniff",
+                                           "Referrer-Policy": "no-referrer"})
 
     @app.get("/healthz", tags=["ops"])
     async def healthz() -> dict[str, str]:
