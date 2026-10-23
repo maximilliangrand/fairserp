@@ -1,0 +1,63 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - run: uv sync --frozen
+      - run: uv run ruff check .
+      - run: uv run pytest -v
+
+  docker-e2e:
+    runs-on: ubuntu-latest
+    needs: test
+    env:
+      FAIRSERP_API_KEYS: ci-key
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - name: docker compose up
+        run: docker compose up -d --build --wait --wait-timeout 120
+      - name: stack status
+        run: docker compose ps
+      - name: health
+        run: curl -fsS http://localhost:8000/healthz
+      - name: engines
+        run: curl -fsS http://localhost:8000/engines | jq -c '.engines[] | {name, compliance, configured}'
+      - name: live query, engine=google (keyless default stack)
+        run: |
+          curl -sS "http://localhost:8000/search.json?engine=google&q=coffee+near+Austin,+Texas&api_key=ci-key" -o google.json
+          jq '{search_metadata, search_parameters, search_information,
+               organic_results: .organic_results[0:3], local_results: {places: .local_results.places[0:2]},
+               knowledge_graph, serpapi_pagination: {current: .serpapi_pagination.current, next: .serpapi_pagination.next}}' google.json
+          jq -e '.search_metadata.status == "Success" and (.organic_results | length) > 0' google.json
+      - name: live query, engine=wikipedia (official API)
+        run: |
+          curl -sS "http://localhost:8000/search.json?engine=wikipedia&q=Albert+Einstein&api_key=ci-key" -o wikipedia.json
+          jq '{search_metadata: {id: .search_metadata.id, status: .search_metadata.status},
+               organic_results: .organic_results[0:2], knowledge_graph}' wikipedia.json
+          jq -e '.knowledge_graph.title == "Albert Einstein"' wikipedia.json
+      - name: official SerpApi python client, base URL changed only
+        run: uv run --no-project --with serpapi python scripts/compat_check.py http://localhost:8000 ci-key
+      - name: cached repeat is not counted, bad key is rejected
+        run: |
+          curl -fsS "http://localhost:8000/search.json?engine=wikipedia&q=Albert+Einstein&api_key=ci-key" > /dev/null
+          curl -fsS "http://localhost:8000/account.json?api_key=ci-key" | jq '{this_hour_searches, account_rate_limit_per_hour}'
+          test "$(curl -s -o /dev/null -w '%{http_code}' 'http://localhost:8000/search.json?q=x&api_key=wrong')" = 401
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e2e-responses
+          path: "*.json"
+      - name: logs
+        if: always()
+        run: docker compose logs fairserp
+      - if: always()
+        run: docker compose down -v

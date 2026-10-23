@@ -1,0 +1,36 @@
+# One-command deploy:
+#   FAIRSERP_API_KEYS=your-secret-key docker compose up -d
+# or put the variables in a .env file next to this one (see .env.example).
+services:
+  fairserp:
+    build: .
+    image: fairserp:local
+    restart: unless-stopped
+    ports:
+      - "${FAIRSERP_PORT:-8000}:8000"
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      FAIRSERP_API_KEYS: ${FAIRSERP_API_KEYS:?set FAIRSERP_API_KEYS (comma separated keys)}
+      FAIRSERP_BACKEND: redis://redis:6379/0
+      FAIRSERP_PUBLIC_URL: ${FAIRSERP_PUBLIC_URL:-http://localhost:8000}
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "256mb",
+              "--maxmemory-policy", "volatile-lru"]
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  redis-data:
