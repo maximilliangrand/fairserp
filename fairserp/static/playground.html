@@ -896,7 +896,9 @@ footer { border-top: 1px solid var(--color-rule); padding: var(--space-md) var(-
       const wiki = el("button", { class: "btn", type: "button" }, "Search Wikipedia");
       wiki.addEventListener("click", () => { $("engine-select").value = "wikipedia"; search(); });
       const local = el("button", { class: "btn", type: "button" }, "Try a local search");
-      local.addEventListener("click", () => { $("q").value = "coffee"; $("location").value = "Austin, Texas"; search(); });
+      local.addEventListener("click", () => {
+        $("q").value = "coffee"; $("location").value = "Austin, Texas"; $("engine-select").value = "auto"; search();
+      });
       row.append(wiki, local);
       intro.append(row, el("p", { class: "muted" }, `Enabled now: ${enabled.join(", ")}.`));
     }
@@ -1090,6 +1092,7 @@ footer { border-top: 1px solid var(--color-rule); padding: var(--space-md) var(-
   document.querySelectorAll("[data-example]").forEach((b) => b.addEventListener("click", () => {
     $("q").value = b.dataset.example;
     $("location").value = b.dataset.near || "";
+    $("engine-select").value = "auto";
     renderSnippet();
     search();
   }));
