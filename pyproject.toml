@@ -1,6 +1,6 @@
 [project]
 name = "fairserp"
-version = "0.1.0"
+version = "0.2.0"
 description = "Self-hostable, SerpApi-compatible search API built on official and openly licensed search sources."
 readme = "README.md"
 license = "AGPL-3.0-only"
@@ -13,11 +13,19 @@ dependencies = [
     "redis>=5.0",
 ]
 
+[project.optional-dependencies]
+langchain = ["langchain-core>=0.3"]
+
+[project.scripts]
+fairserp = "fairserp.cli:main"
+
 [dependency-groups]
 dev = [
     "pytest>=8",
     "pytest-asyncio>=0.24",
     "respx>=0.21",
+    "fakeredis>=2.26",
+    "langchain-core>=0.3",
     "ruff>=0.6",
 ]
 
