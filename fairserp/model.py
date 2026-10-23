@@ -99,6 +99,18 @@ class Place(BaseModel):
     reviews: int | None = None
     place_id: str = ""
     description: str | None = None
+    in_area: bool | None = Field(
+        None, description="False when the place lies outside the named area's boundary.")
+
+
+class Area(BaseModel):
+    """The place a local search was resolved to, for framing results on a map."""
+
+    name: str
+    latitude: float
+    longitude: float
+    bbox: list[float] = Field(description="south, north, west, east")
+    has_boundary: bool
 
 
 class Entity(BaseModel):
@@ -130,6 +142,8 @@ class EngineOutput(BaseModel):
     related: list[str] = Field(default_factory=list)
     total_results: int | None = None
     has_more: bool | None = None
+    area: Area | None = None
+    notes: list[str] = Field(default_factory=list)
 
     def is_empty(self, vertical: Vertical) -> bool:
         return not (self.places if vertical == Vertical.LOCAL else self.web)
@@ -206,6 +220,9 @@ class SearchOutcome(BaseModel):
     entity: Entity | None = None
     answer: Answer | None = None
     related: list[str] = Field(default_factory=list)
+    area: Area | None = None
+    notes: list[str] = Field(default_factory=list,
+                             description="Things the caller should know, e.g. a widened area.")
     total_results: int | None = None
     has_more: bool = False
     attribution: list[str] = Field(default_factory=list)

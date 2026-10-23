@@ -223,6 +223,53 @@ aside h2 { font-size: var(--text-base); }
 pre.code { margin: 0; padding: var(--space-md); background: var(--color-graphite); max-width: 100%;
            color: var(--color-graphite-ink); border-radius: var(--radius-md);
            font: 400 var(--text-xs)/1.6 var(--font-mono); overflow: auto; white-space: pre; }
+#snippet { white-space: pre-wrap; overflow-wrap: anywhere; }
+.notes { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--space-2xs);
+         overflow-wrap: anywhere;
+         font-size: var(--text-sm); color: var(--color-ink-2); }
+.notes li { display: flex; gap: var(--space-xs); align-items: baseline; }
+.notes li::before { content: ""; width: 0.5rem; height: 0.5rem; border-radius: 50%;
+                    background: var(--color-warn); flex: none; transform: translateY(-0.05rem); }
+.local { display: grid; gap: var(--space-md); margin-bottom: var(--space-xl); }
+.local h2 { font-size: var(--text-xl); }
+.local-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+              gap: var(--space-xl); align-items: start; }
+.local .places { gap: var(--space-md); font-size: var(--text-base); counter-reset: place; }
+.local .places li { grid-template-columns: 1.75rem minmax(0, 1fr); display: grid;
+                    column-gap: var(--space-sm); padding-bottom: var(--space-md);
+                    border-bottom: 1px solid var(--color-rule); }
+.local .places li > * { grid-column: 2; }
+.local .places .pin { grid-column: 1; grid-row: 1 / span 3; font-family: var(--font-mono);
+                      font-size: var(--text-sm); color: var(--color-muted); }
+.local .places .outside { font-family: var(--font-mono); font-size: var(--text-xs);
+                          color: var(--color-warn); }
+.map { margin: 0; display: grid; gap: var(--space-xs); position: sticky; top: var(--space-md); }
+.map-canvas { border: 1px solid var(--color-rule); border-radius: var(--radius-md);
+              background: var(--color-paper-2); aspect-ratio: 4 / 3; overflow: hidden; }
+.map-canvas svg { width: 100%; height: 100%; display: block; }
+.map figcaption { font-size: var(--text-xs); color: var(--color-muted); }
+.map .area { fill: var(--color-accent-soft); stroke: var(--color-accent); stroke-width: 1.5;
+             stroke-dasharray: 5 4; vector-effect: non-scaling-stroke; }
+.map .ring { fill: none; stroke: var(--color-rule-2); stroke-width: 1;
+             vector-effect: non-scaling-stroke; }
+.map .center { fill: var(--color-ink); }
+.map .pin-dot { fill: var(--color-accent); stroke: var(--color-surface); stroke-width: 2;
+                vector-effect: non-scaling-stroke; }
+.map .pin-dot.is-outside { fill: var(--color-surface); stroke: var(--color-warn); }
+.map text { font-family: var(--font-mono); fill: var(--color-ink); }
+.map .label { fill: var(--color-muted); }
+.panel { display: grid; gap: var(--space-md); padding: var(--space-lg);
+         border: 1px solid var(--color-rule-2); border-radius: var(--radius-md);
+         background: var(--color-surface); margin-bottom: var(--space-xl); max-width: 72ch;
+         grid-template-columns: minmax(0, 1fr); overflow-wrap: anywhere; }
+.panel h2 { font-size: var(--text-xl); }
+.panel h3 { font-family: var(--font-body); font-size: var(--text-base); font-weight: 600; }
+.panel p { margin: 0; text-wrap: pretty; }
+.panel ul { margin: 0; padding-left: 1.1rem; display: grid; gap: var(--space-2xs); }
+.panel .row { display: flex; flex-wrap: wrap; gap: var(--space-xs); }
+.panel .enabled { display: flex; flex-wrap: wrap; gap: var(--space-xs); list-style: none;
+                  padding: 0; }
+.panel pre.code { white-space: pre-wrap; overflow-wrap: anywhere; }
 .raw summary { cursor: pointer; font-size: var(--text-sm); color: var(--color-muted); }
 .raw summary:hover { color: var(--color-ink); }
 .raw pre.code { margin-top: var(--space-sm); max-height: 28rem; }
@@ -244,6 +291,10 @@ footer { border-top: 1px solid var(--color-rule); padding: var(--space-md) var(-
          gap: var(--space-xs) var(--space-lg); justify-content: space-between; }
 footer p { margin: 0; }
 
+@media (max-width: 860px) {
+  .local-grid { grid-template-columns: minmax(0, 1fr); }
+  .map { position: static; max-width: 30rem; }
+}
 @media (max-width: 960px) {
   .layout { grid-template-columns: minmax(0, 1fr); gap: var(--space-xl); }
   .query { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -251,6 +302,7 @@ footer p { margin: 0; }
   .query .btn--primary { grid-column: 1 / -1; }
 }
 @media (max-width: 520px) {
+  .panel { padding: var(--space-md); }
   .bar { padding: var(--space-sm) var(--space-md); gap: var(--space-sm); }
   .bar-tools { margin-left: 0; width: 100%; }
   .input--key { width: auto; flex: 1; }
@@ -335,6 +387,7 @@ footer p { margin: 0; }
     </dl>
     <ul class="providers" id="providers" aria-label="Providers"></ul>
     <p class="params" id="params"></p>
+    <ul class="notes" id="notes" hidden></ul>
   </section>
 
   <div class="layout">
@@ -345,6 +398,17 @@ footer p { margin: 0; }
            provenance, and how long this server may keep it.</p>
         <p>Engines that cannot honor a parameter are reported, not hidden.</p>
       </div>
+      <section class="panel" id="panel" hidden aria-live="polite"></section>
+      <section class="local" id="local" hidden>
+        <h2 id="local-title">Places</h2>
+        <div class="local-grid">
+          <figure class="map" id="map">
+            <div class="map-canvas" id="map-canvas"></div>
+            <figcaption id="map-caption"></figcaption>
+          </figure>
+          <ol class="places" id="places"></ol>
+        </div>
+      </section>
       <div class="error" id="error" hidden role="alert">
         <h2 id="error-title"></h2>
         <p id="error-body"></p>
@@ -367,10 +431,6 @@ footer p { margin: 0; }
         <div id="entity-media"></div>
         <p id="entity-desc"></p>
         <dl class="facts" id="entity-facts"></dl>
-      </section>
-      <section id="places-section" hidden>
-        <h2>Places</h2>
-        <ol class="places" id="places"></ol>
       </section>
       <section class="copy">
         <h2>Run this elsewhere</h2>
@@ -493,6 +553,165 @@ footer p { margin: 0; }
     $("error-hint").textContent = hint || "";
   }
 
+  function km(meters) {
+    return meters < 1000 ? `${meters} m` : `${(meters / 1000).toFixed(1)} km`;
+  }
+
+  function renderPlaces(data) {
+    const places = data.places || [];
+    $("local").hidden = !places.length;
+    if (!places.length) return;
+    const area = data.area;
+    $("local-title").textContent = area ? `Places in ${area.name}` : "Places";
+    const list = $("places");
+    list.replaceChildren();
+    places.forEach((p, i) => {
+      const item = el("li");
+      item.append(el("span", { class: "pin" }, i + 1), el("strong", {}, p.name));
+      const detail = [p.category, p.distance_m != null ? `${km(p.distance_m)} from the centre` : ""]
+        .filter(Boolean).join(", ");
+      item.append(el("span", {}, detail), el("span", {}, p.address));
+      if (p.in_area === false) item.append(el("span", { class: "outside" }, `outside ${area ? area.name : "the area"}`));
+      if (p.hours) item.append(el("span", { class: "mono" }, p.hours));
+      const href = p.website && safeHref(p.website);
+      if (href) {
+        const link = el("a", { href, rel: "noopener noreferrer nofollow" }, new URL(href).hostname);
+        item.append(link);
+      }
+      list.append(item);
+    });
+    drawMap(area, places);
+  }
+
+  // A drawn map: the area's bounding box, distance rings and numbered pins. No tiles, so the
+  // page still makes no third-party requests and keeps its strict CSP.
+  function drawMap(area, places) {
+    const canvas = $("map-canvas");
+    canvas.replaceChildren();
+    const NS = "http://www.w3.org/2000/svg";
+    const svg = document.createElementNS(NS, "svg");
+    const node = (tag, attrs, text) => {
+      const n = document.createElementNS(NS, tag);
+      for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v);
+      if (text != null) n.textContent = text;
+      return n;
+    };
+    const lat0 = area ? area.latitude : places[0].latitude;
+    const lon0 = area ? area.longitude : places[0].longitude;
+    const kx = 111.32 * Math.cos(lat0 * Math.PI / 180), ky = 110.57;
+    const project = (lat, lon) => [(lon - lon0) * kx, -(lat - lat0) * ky];
+    const points = places.map((p) => project(p.latitude, p.longitude));
+    let box = null;
+    if (area) {
+      const [s, n, w, e] = area.bbox;
+      const [x1, y1] = project(n, w), [x2, y2] = project(s, e);
+      box = { x: x1, y: y1, w: x2 - x1, h: y2 - y1 };
+    }
+    const xs = points.map((p) => p[0]).concat(box ? [box.x, box.x + box.w] : [0]);
+    const ys = points.map((p) => p[1]).concat(box ? [box.y, box.y + box.h] : [0]);
+    const pad = 0.08;
+    let minX = Math.min(...xs), maxX = Math.max(...xs), minY = Math.min(...ys), maxY = Math.max(...ys);
+    let w = Math.max(maxX - minX, 0.5), h = Math.max(maxY - minY, 0.5);
+    if (w / h > 4 / 3) { const nh = w * 3 / 4; minY -= (nh - h) / 2; h = nh; }
+    else { const nw = h * 4 / 3; minX -= (nw - w) / 2; w = nw; }
+    minX -= w * pad; minY -= h * pad; w *= 1 + 2 * pad; h *= 1 + 2 * pad;
+    svg.setAttribute("viewBox", `${minX} ${minY} ${w} ${h}`);
+    svg.setAttribute("role", "img");
+    svg.setAttribute("aria-label", `Map of ${places.length} places${area ? " around " + area.name : ""}`);
+    if (box) svg.append(node("rect", { class: "area", x: box.x, y: box.y, width: box.w, height: box.h }));
+    const far = Math.max(...places.map((p) => p.distance_m || 0)) / 1000;
+    const step = far > 8 ? 5 : far > 3 ? 2 : far > 1 ? 1 : 0.5;
+    for (let r = step; r <= far + step && r <= step * 6; r += step) {
+      svg.append(node("circle", { class: "ring", cx: 0, cy: 0, r }));
+      svg.append(node("text", { class: "label", x: r * 0.71 + w * 0.01, y: -r * 0.71,
+                                "font-size": w * 0.028 }, `${r} km`));
+    }
+    svg.append(node("circle", { class: "center", cx: 0, cy: 0, r: w * 0.008 }));
+    points.forEach(([x, y], i) => {
+      const outside = places[i].in_area === false;
+      svg.append(node("circle", { class: `pin-dot${outside ? " is-outside" : ""}`, cx: x, cy: y, r: w * 0.017 }));
+      svg.append(node("text", { x: x + w * 0.022, y: y + w * 0.011, "font-size": w * 0.034 }, i + 1));
+    });
+    canvas.append(svg);
+    $("map-caption").textContent = (area
+      ? `${area.has_boundary ? "Dashed box: " + area.name + "'s extent. " : "No mapped boundary for " + area.name + ". "}`
+      : "") + "Rings measure distance from the centre. Map data © OpenStreetMap contributors, ODbL.";
+  }
+
+  function retryText(seconds) {
+    if (!seconds) return "";
+    const at = new Date(Date.now() + seconds * 1000);
+    const hours = Math.round(seconds / 3600);
+    const when = seconds < 90 ? `${seconds} seconds` : seconds < 5400 ? `${Math.round(seconds / 60)} minutes` : `about ${hours} hours`;
+    return `It resets in ${when}, around ${at.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}.`;
+  }
+
+  function showLimits(data) {
+    const limited = (data.providers || []).filter((p) =>
+      ["rate_limited", "failed", "timeout"].includes(p.status) && p.role === "organic");
+    if (!limited.length) return;
+    const panel = $("panel");
+    panel.replaceChildren();
+    const lines = limited.map((p) => {
+      const budget = /budget/.test(p.error || "");
+      const cap = p.status === "rate_limited" && !budget;
+      const what = budget ? `This server's call budget for ${p.engine} is spent.`
+        : cap ? `${p.engine} is rate limiting this server${p.engine === "firecrawl" ? " (its free tier has a daily cap per IP address)" : ""}.`
+        : `${p.engine} did not answer (${p.status.replace("_", " ")}).`;
+      return `${what} ${retryText(p.retry_after)}`.trim();
+    });
+    panel.append(el("h2", {}, data.results && data.results.length ? "Some providers are limited" : "Provider limit reached"));
+    lines.forEach((line) => panel.append(el("p", {}, line)));
+    if (!(data.results || []).length) {
+      const row = el("div", { class: "row" });
+      const wiki = el("button", { class: "btn", type: "button" }, "Search Wikipedia instead");
+      wiki.addEventListener("click", () => { $("engine-select").value = "wikipedia"; search(); });
+      row.append(wiki);
+      panel.append(el("p", {}, "A provider key removes the shared cap: Tavily and Exa both offer free keys without a card."), row);
+    }
+    panel.hidden = false;
+  }
+
+  async function showSetup(error) {
+    const panel = $("panel");
+    panel.replaceChildren();
+    let engines = [];
+    try {
+      const response = await fetch("/v1/engines", { headers: headers() });
+      if (response.ok) engines = (await response.json()).engines;
+    } catch { /* the setup notes still help without the live list */ }
+    panel.append(el("h2", {}, "Turn on a web search provider"),
+      el("p", {}, "This server runs in the strict profile, which only uses providers that disclose where their results come from. None of those that return general web results has a key yet."));
+    const enabled = engines.filter((e) => e.enabled);
+    if (enabled.length) {
+      panel.append(el("h3", {}, "Working now, without setup"));
+      const list = el("ul", { class: "enabled" });
+      enabled.forEach((e) => list.append(el("li", { class: "badge" }, `${e.name} · ${e.role}`)));
+      panel.append(list);
+      const row = el("div", { class: "row" });
+      const wiki = el("button", { class: "btn", type: "button" }, "Search Wikipedia");
+      wiki.addEventListener("click", () => { $("engine-select").value = "wikipedia"; search(); });
+      const local = el("button", { class: "btn", type: "button" }, "Try a local search");
+      local.addEventListener("click", () => { $("q").value = "coffee"; $("location").value = "Austin, Texas"; search(); });
+      row.append(wiki, local);
+      panel.append(row);
+    }
+    panel.append(el("h3", {}, "Quickest: the keyless option"),
+      el("pre", { class: "code" }, "FAIRSERP_OPT_IN=firecrawl fairserp serve\n# or: FAIRSERP_OPT_IN=firecrawl docker compose up -d"),
+      el("p", {}, "Firecrawl needs no key, but it does not say where its results come from (they carry Google's click-tracking parameter), so fairserp only uses it when you opt in. Its free tier has a daily cap per IP address."));
+    panel.append(el("h3", {}, "Free keys worth getting"));
+    const keys = el("ul");
+    [
+      "Tavily: 1,000 searches a month, no card. Undisclosed sources, so it also needs FAIRSERP_OPT_IN=tavily.",
+      "Exa: $10 of credit a month, no card. Undisclosed sources (FAIRSERP_OPT_IN=exa).",
+      "Marginalia: a free key by email for an independent index. Noncommercial use only (FAIRSERP_NONCOMMERCIAL_DEPLOYMENT=true).",
+      "Brave or Mojeek: their own indexes and strict-profile ready, but both need a card on file (Brave includes $5 of credit a month).",
+    ].forEach((text) => keys.append(el("li", {}, text)));
+    panel.append(keys);
+    if (error && error.message) panel.append(el("p", { class: "params" }, error.message));
+    panel.hidden = false;
+  }
+
   function render(data) {
     $("summary").hidden = false;
     setStatus($("status"), data.status);
@@ -504,13 +723,22 @@ footer p { margin: 0; }
 
     const providers = $("providers");
     providers.replaceChildren();
-    for (const p of data.providers || []) {
+    const skipped = (data.providers || []).filter((p) => p.status === "skipped");
+    for (const p of (data.providers || []).filter((p) => p.status !== "skipped")) {
       const state = p.cached ? "cached" : p.status;
       const item = el("li", { class: "provider", "data-tone": TONE[state] || "idle",
                               title: p.error || `${p.role}, ${p.results} results` });
       item.append(el("span", { class: "dot", "aria-hidden": "true" }), el("span", {}, p.engine));
       const meta = p.cached ? "cached" : p.latency_ms != null ? `${p.status} ${p.latency_ms} ms` : p.status;
       item.append(el("span", { class: "meta" }, meta.replace("_", " ")));
+      providers.append(item);
+    }
+    if (skipped.length) {
+      const item = el("li", { class: "provider", "data-tone": "idle",
+                              title: skipped.map((p) => `${p.engine}: ${p.error}`).join("\n") });
+      item.append(el("span", { class: "dot", "aria-hidden": "true" }),
+                  el("span", {}, `${skipped.length} not enabled`),
+                  el("span", { class: "meta" }, skipped.map((p) => p.engine).join(", ")));
       providers.append(item);
     }
 
@@ -553,10 +781,10 @@ footer p { margin: 0; }
       item.append(body);
       list.append(item);
     }
-    if (!(data.results || []).length && !(data.places || []).length) {
-      showError(data.status === "empty" ? "No results" : "Nothing came back",
-                data.error || "Every provider answered with an empty result.",
-                "Try a broader query or another mode.");
+    if (!(data.results || []).length && !(data.places || []).length &&
+        data.status === "empty") {
+      showError("No results", "Every provider answered, and none had results for this query.",
+                "Try a broader query or another engine.");
     }
 
     const answer = data.answer;
@@ -581,17 +809,12 @@ footer p { margin: 0; }
       if (entity.wikidata_id) rows.unshift(["wikidata", entity.wikidata_id]);
       for (const [k, v] of rows) facts.append(el("dt", {}, k.replaceAll("_", " ")), el("dd", {}, v));
     }
-    const places = $("places");
-    places.replaceChildren();
-    $("places-section").hidden = !(data.places || []).length;
-    for (const p of data.places || []) {
-      const item = el("li");
-      item.append(el("strong", {}, p.name));
-      const detail = [p.category, p.address, p.distance_m != null ? `${(p.distance_m / 1000).toFixed(1)} km` : ""]
-        .filter(Boolean).join(", ");
-      item.append(el("span", {}, detail));
-      if (p.hours) item.append(el("span", { class: "mono" }, p.hours));
-      places.append(item);
+    renderPlaces(data);
+    const notes = $("notes");
+    notes.replaceChildren(...(data.notes || []).map((n) => el("li", {}, n)));
+    notes.hidden = !(data.notes || []).length;
+    if (data.status === "rate_limited" || data.status === "partial" || data.status === "failed") {
+      showLimits(data);
     }
     $("attribution").textContent = (data.attribution || []).length
       ? `Sources: ${data.attribution.join("; ")}.`
@@ -611,6 +834,8 @@ footer p { margin: 0; }
     button.textContent = "Searching";
     $("empty").hidden = true;
     $("error").hidden = true;
+    $("panel").hidden = true;
+    $("local").hidden = true;
     $("results").replaceChildren();
     $("loading").hidden = false;
     const p = params();
@@ -623,6 +848,9 @@ footer p { margin: 0; }
         showError("API key needed", "This server requires a key.", "Paste one into the field at the top right; it stays in this browser.");
       } else if (data && data.status) {
         render(data);
+      } else if (data && data.error && data.error.code === "no_engine_enabled") {
+        $("summary").hidden = true;
+        await showSetup(data.error);
       } else {
         const message = data && data.error ? (data.error.message || data.error) : `HTTP ${response.status}`;
         showError("The server refused this search", message,

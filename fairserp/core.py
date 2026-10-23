@@ -41,10 +41,13 @@ ENRICHMENT_GRACE_SECONDS = 0.3
 class PlanError(Exception):
     """The query cannot run under this deployment's policy. Nothing was billed or sent."""
 
-    def __init__(self, status: int, message: str) -> None:
+    def __init__(self, status: int, message: str, code: str = "plan_rejected",
+                 details: list[dict] | None = None) -> None:
         super().__init__(message)
         self.status = status
         self.message = message
+        self.code = code
+        self.details = details or []
 
 
 @dataclass
@@ -132,7 +135,10 @@ class Searcher:
             else:
                 candidates.append(engine)
         if not candidates:
-            raise PlanError(503 if not query.safe else 400, _no_engine_message(query, skipped))
+            if query.safe:
+                raise PlanError(400, _no_engine_message(query, skipped), "safe_search_unavailable")
+            raise PlanError(503, _no_engine_message(query, skipped), "no_engine_enabled",
+                            [{"engine": r.engine, "reason": r.error} for r in skipped])
         if query.mode == Mode.PRIVATE:
             candidates = candidates[:1]
         elif query.mode == Mode.RESEARCH:
@@ -325,6 +331,7 @@ class Searcher:
         if local_vertical:
             if ok_primary:
                 outcome.places = ok_primary[0].output.places
+                outcome.area = ok_primary[0].output.area
                 outcome.has_more = bool(ok_primary[0].output.has_more)
         else:
             self._merge_organic(outcome, query, ok_primary)
@@ -389,6 +396,10 @@ class Searcher:
             outcome.answer = output.answer
         if output.places and not outcome.places:
             outcome.places = output.places
+            outcome.area = output.area
+        for note in output.notes:
+            if note not in outcome.notes:
+                outcome.notes.append(note)
         if output.questions and not outcome.questions:
             outcome.questions = output.questions
         for related in output.related:
@@ -424,10 +435,9 @@ def _no_engine_message(query: SearchQuery, skipped: list[ProviderReport]) -> str
     if query.safe:
         return ("Safe search was requested but no enabled organic engine can enforce it; "
                 "refusing to run the query unfiltered.")
-    reasons = "; ".join(f"{r.engine}: {r.error}" for r in skipped)
-    return ("No organic search engine is enabled. Add a provider key (e.g. "
-            "FAIRSERP_BRAVE_API_KEY) or opt in to an undisclosed-provenance engine "
-            f"(e.g. FAIRSERP_OPT_IN=firecrawl). Details: {reasons}")
+    return ("No web search provider is enabled on this server. Add a provider key (for "
+            "example FAIRSERP_BRAVE_API_KEY) or opt in to a keyless provider "
+            "(FAIRSERP_OPT_IN=firecrawl). GET /v1/engines lists why each one is off.")
 
 
 def _fragment_key(engine: str, query: SearchQuery) -> str:

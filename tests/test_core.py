@@ -51,10 +51,11 @@ def test_named_engine_blocked_by_policy_is_403():
 def test_noncommercial_sources_need_a_declaration():
     marginalia = stubs.organic("marginalia",
                                rights_=stubs.rights(commercial=CommercialUse.NONCOMMERCIAL))
-    with pytest.raises(PlanError, match="noncommercial"):
-        searcher(marginalia).plan(SearchQuery(q="x"))
-    with pytest.raises(PlanError, match="noncommercial"):
-        searcher(marginalia, opt_in="marginalia").plan(SearchQuery(q="x"))
+    for overrides in ({}, {"opt_in": "marginalia"}):
+        with pytest.raises(PlanError) as exc:
+            searcher(marginalia, **overrides).plan(SearchQuery(q="x"))
+        assert exc.value.code == "no_engine_enabled"
+        assert "noncommercial" in exc.value.details[0]["reason"]
     assert searcher(marginalia, noncommercial_deployment=True).plan(SearchQuery(q="x")).organic
 
 

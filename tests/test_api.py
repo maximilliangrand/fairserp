@@ -363,3 +363,31 @@ def test_playground_is_served_under_a_hash_csp():
     assert "script-src 'sha256-" in csp and "unsafe-inline" not in csp
     assert "connect-src 'self'" in csp
     assert "fonts.googleapis" not in response.text and "<script src" not in response.text
+
+
+def test_no_engine_enabled_is_a_structured_error():
+    from fairserp.rights import Provenance
+    hidden = stubs.organic("firecrawl", rights_=stubs.rights(Provenance.UNDISCLOSED))
+    with client(hidden) as c:
+        body = c.get("/v1/search", params={"q": "x"}, headers=AUTH).json()
+    assert body["error"]["code"] == "no_engine_enabled"
+    assert body["error"]["details"][0]["engine"] == "firecrawl"
+    assert len(body["error"]["message"]) < 300
+
+
+def test_local_notes_and_area_reach_both_wire_formats():
+    from fairserp.model import Area
+    note = "Only 1 cafe result inside X; widened to nearby places."
+    local = stubs.local_engine()
+    local.output = local.output.model_copy(update={
+        "notes": [note], "area": Area(name="X", latitude=1, longitude=2, bbox=[0, 2, 1, 3],
+                                      has_boundary=True)})
+    with TestClient(create_app(settings(organic_priority="a", upstream_budgets="",
+                                        serpapi_engines="google_maps:openstreetmap"),
+                               registry(stubs.organic("a"), local))) as c:
+        native = c.get("/v1/search", params={"q": "coffee", "location": "X",
+                                             "vertical": "local"}, headers=AUTH).json()
+        serp = c.get("/search.json", params={"engine": "google_maps", "q": "coffee",
+                                             "location": "X"}, headers=AUTH).json()
+    assert native["notes"] == [note] and native["area"]["name"] == "X"
+    assert serp["search_metadata"]["fairserp"]["notes"] == [note]
