@@ -2,12 +2,12 @@
 
 from typing import Any
 
-import httpx
-
 from fairserp.engines.base import EngineContext, EngineError
+from fairserp.engines.openstreetmap import OpenStreetMapEngine
 from fairserp.store import Store
 
 CACHE_TTL = 7 * 24 * 3600
+_ENGINE = OpenStreetMapEngine()
 
 
 async def search(q: str, limit: int, ctx: EngineContext, store: Store) -> list[dict[str, Any]]:
@@ -17,21 +17,19 @@ async def search(q: str, limit: int, ctx: EngineContext, store: Store) -> list[d
         return cached
     url = f"{ctx.settings.nominatim_url.rstrip('/')}/search"
     params = {"q": q, "format": "jsonv2", "limit": limit, "addressdetails": 1}
+    items = await _ENGINE.get_json(ctx, "GET", url, params=params)
     try:
-        response = await ctx.http.request("openstreetmap", "GET", url, params=params)
-    except httpx.HTTPError as exc:
-        raise EngineError("openstreetmap", "upstream connection failed") from exc
-    if response.status_code != 200:
-        raise EngineError("openstreetmap", f"upstream returned HTTP {response.status_code}")
-    result = [_location(item) for item in response.json()]
+        result = [_location(item) for item in items]
+    except (KeyError, TypeError, ValueError, AttributeError) as exc:
+        raise EngineError("openstreetmap", "unexpected upstream payload") from exc
     await store.set_json(cache_key, result, CACHE_TTL)
     return result
 
 
 def _location(item: dict[str, Any]) -> dict[str, Any]:
-    canonical = ",".join(part.strip() for part in item.get("display_name", "").split(","))
+    canonical = ",".join(part.strip() for part in item["display_name"].split(","))
     return {
-        "id": f"osm:{item.get('osm_type')}/{item.get('osm_id')}",
+        "id": f"osm:{item['osm_type']}/{item['osm_id']}",
         "google_id": None,
         "google_parent_id": None,
         "name": item.get("name") or canonical.split(",")[0],

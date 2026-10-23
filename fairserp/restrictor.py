@@ -26,6 +26,45 @@ def apply(data: Any, expression: str) -> Any:
     return _apply(data, expression)
 
 
+_NAME = re.compile(r"[A-Za-z0-9_]+")
+_BRACKET = re.compile(r"\[(\d*)(?::(\d*))?\]")
+
+
+def validate(expression: str) -> None:
+    """Reject a malformed expression before any search runs (and before billing)."""
+    if len(expression) > MAX_LENGTH:
+        raise RestrictorError("json_restrictor is too long")
+    if _max_depth(expression) > MAX_DEPTH:
+        raise RestrictorError("json_restrictor is nested too deeply")
+    for path in _split_top_level(expression):
+        _validate_path(path.strip())
+
+
+def _validate_path(path: str) -> None:
+    if path.startswith("{"):
+        if not path.endswith("}"):
+            raise RestrictorError(f"Invalid json_restrictor path: {path}")
+        for inner in _split_top_level(path[1:-1]):
+            _validate_path(inner.strip())
+        return
+    name = _NAME.match(path)
+    if not name:
+        raise RestrictorError(f"Invalid json_restrictor path: {path}")
+    rest = path[name.end():]
+    while rest.startswith("["):
+        bracket = _BRACKET.match(rest)
+        if not bracket:
+            raise RestrictorError(f"Invalid json_restrictor index in: {path}")
+        rest = rest[bracket.end():]
+    if not rest:
+        return
+    if rest.startswith("."):
+        rest = rest[1:]
+    if not rest:
+        raise RestrictorError(f"Invalid json_restrictor path: {path}")
+    _validate_path(rest)
+
+
 def _max_depth(expression: str) -> int:
     depth = deepest = 0
     for char in expression:
