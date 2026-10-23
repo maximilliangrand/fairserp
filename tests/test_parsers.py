@@ -246,6 +246,7 @@ def test_local_results_respect_the_area_boundary_and_report_widening():
     out = OpenStreetMapEngine().parse(_area_payload(inside + [_cafe("out", 1.2, 0.5)]), query)
     assert [p.name for p in out.places] == ["in0", "in1", "in2"] and not out.notes
     assert out.area.has_boundary and out.area.name == "Square"
+    assert out.area.outline == [[[0, 0], [0, 1], [1, 1], [1, 0], [0, 0]]]
 
     sparse = OpenStreetMapEngine().parse(_area_payload(
         [_cafe("in0", 0.5, 0.5), _cafe("out", 1.2, 0.5)]), query)
@@ -268,3 +269,5 @@ def test_brooklyn_fixture_has_no_manhattan_or_queens_places():
     out = OpenStreetMapEngine().parse(load("openstreetmap_pizza.json"), query)
     assert out.places and all("Brooklyn" in p.address for p in out.places)
     assert all(p.in_area for p in out.places)
+    rings = out.area.outline
+    assert rings and all(3 < len(ring) <= 240 for ring in rings)

@@ -111,6 +111,9 @@ class Area(BaseModel):
     longitude: float
     bbox: list[float] = Field(description="south, north, west, east")
     has_boundary: bool
+    outline: list[list[list[float]]] = Field(
+        default_factory=list,
+        description="Outer boundary rings as [longitude, latitude] pairs, simplified for drawing.")
 
 
 class Entity(BaseModel):
