@@ -54,4 +54,5 @@ def test_rrf_dedups_and_orders_by_agreement():
 
 
 def test_clean_text_unescapes_html_entities():
-    assert clean_text("Einstein&#039;s <b>fourth</b>-great &amp; co") == "Einstein's fourth-great & co"
+    cleaned = clean_text("Einstein&#039;s <b>fourth</b>-great &amp; co")
+    assert cleaned == "Einstein's fourth-great & co"

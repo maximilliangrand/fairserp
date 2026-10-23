@@ -19,7 +19,9 @@ from tests.conftest import load, settings
 QUERY = SearchQuery(q="coffee beans", country="de", language="de", safe=True,
                     freshness=Freshness.WEEK, num=10, offset=10)
 CREDENTIALS = dict(brave_api_key="brave-secret", mojeek_api_key="mojeek-secret",
-                   tavily_api_key="tavily-secret", searxng_url="http://searx.local")
+                   tavily_api_key="tavily-secret", searxng_url="http://searx.local",
+                   exa_api_key="exa-secret", parallel_api_key="parallel-secret",
+                   jina_api_key="jina-secret")
 
 
 async def capture(engine_name: str, response: object, query: SearchQuery = QUERY):
@@ -130,3 +132,30 @@ def test_proxy_is_sticky_not_rotated():
     assert {pool.proxy_for("firecrawl") for _ in range(5)} == {"http://egress:3128"}
     assert pool.proxy_for("wikipedia") is None
     assert pool.proxy_for("brave") == "http://b:1"
+
+
+async def test_exa_contract():
+    calls, engine = await capture("exa", load("exa_coffee.json"))
+    request = calls[0].request
+    body = json.loads(request.content)
+    assert request.headers["x-api-key"] == "exa-secret"
+    assert body["query"] == "coffee beans" and body["numResults"] == 20
+    assert body["userLocation"] == "DE" and "startPublishedDate" in body
+    assert engine.applied(QUERY) == {"country", "freshness"}
+
+
+async def test_parallel_contract():
+    calls, engine = await capture("parallel", load("parallel_coffee.json"))
+    request = calls[0].request
+    assert request.headers["x-api-key"] == "parallel-secret"
+    assert json.loads(request.content)["search_queries"] == ["coffee beans"]
+    assert engine.applied(QUERY) == set()
+
+
+async def test_jina_contract():
+    calls, engine = await capture("jina", load("jina_coffee.json"))
+    request = calls[0].request
+    assert request.url.host == "s.jina.ai"
+    assert dict(request.url.params) == {"q": "coffee beans", "gl": "de", "hl": "de"}
+    assert request.headers["Authorization"] == "Bearer jina-secret"
+    assert request.headers["X-Respond-With"] == "no-content"

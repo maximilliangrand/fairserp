@@ -7,10 +7,13 @@ from importlib.metadata import entry_points
 from fairserp.engines.base import Engine, EngineError, ErrorKind, Role
 from fairserp.engines.brave import BraveEngine
 from fairserp.engines.duckduckgo_ia import DuckDuckGoInstantAnswerEngine
+from fairserp.engines.exa import ExaEngine
 from fairserp.engines.firecrawl import FirecrawlEngine
+from fairserp.engines.jina import JinaEngine
 from fairserp.engines.marginalia import MarginaliaEngine
 from fairserp.engines.mojeek import MojeekEngine
 from fairserp.engines.openstreetmap import OpenStreetMapEngine
+from fairserp.engines.parallel import ParallelEngine
 from fairserp.engines.searxng import SearxngEngine
 from fairserp.engines.tavily import TavilyEngine
 from fairserp.engines.wikidata import WikidataEngine
@@ -19,9 +22,9 @@ from fairserp.engines.wikipedia import WikipediaEngine
 logger = logging.getLogger("fairserp")
 
 BUILTIN = (
-    BraveEngine, MojeekEngine, MarginaliaEngine, TavilyEngine, FirecrawlEngine,
-    SearxngEngine, WikipediaEngine, WikidataEngine, DuckDuckGoInstantAnswerEngine,
-    OpenStreetMapEngine,
+    BraveEngine, MojeekEngine, MarginaliaEngine, TavilyEngine, ExaEngine, ParallelEngine,
+    JinaEngine, FirecrawlEngine, SearxngEngine, WikipediaEngine, WikidataEngine,
+    DuckDuckGoInstantAnswerEngine, OpenStreetMapEngine,
 )
 
 

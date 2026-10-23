@@ -15,10 +15,22 @@
   "recorded_at": "2026-10-23",
   "source": "recorded"
  },
+ "exa_coffee.json": {
+  "engine": "exa",
+  "note": "Written from the provider's published schema; re-record with a real key (scripts/record_fixtures.py).",
+  "source": "handwritten",
+  "verified": false
+ },
  "firecrawl_coffee.json": {
   "engine": "firecrawl",
   "recorded_at": "2026-10-23",
   "source": "recorded"
+ },
+ "jina_coffee.json": {
+  "engine": "jina",
+  "note": "Written from the provider's published schema; re-record with a real key (scripts/record_fixtures.py).",
+  "source": "handwritten",
+  "verified": false
  },
  "marginalia_coffee.json": {
   "engine": "marginalia",
@@ -55,6 +67,12 @@
   },
   "recorded_at": "2026-10-23",
   "source": "recorded"
+ },
+ "parallel_coffee.json": {
+  "engine": "parallel",
+  "note": "Written from the provider's published schema; re-record with a real key (scripts/record_fixtures.py).",
+  "source": "handwritten",
+  "verified": false
  },
  "searxng_coffee.json": {
   "engine": "searxng",

@@ -14,6 +14,9 @@ agreement with a provider takes precedence. Not legal advice.
 | mojeek | organic | own-index | yes | allowed | 60 min | - | yes | yes | yes | - | - | 1000 | unverified |
 | marginalia | organic | own-index | opt-in | noncommercial-only | no limit stated | Marginalia Search, CC-BY-NC-SA 4.0 | - | - | - | - | - | 100 | recorded |
 | tavily | organic | undisclosed | opt-in | per-agreement | no limit stated | - | yes | - | - | yes | - | 20 | unverified |
+| exa | organic | undisclosed | opt-in | per-agreement | no limit stated | - | yes | - | - | yes | - | 100 | unverified |
+| parallel | organic | undisclosed | opt-in | per-agreement | no limit stated | - | - | - | - | - | - | 40 | unverified |
+| jina | organic | undisclosed | opt-in | per-agreement | no limit stated | - | yes | yes | - | - | - | 10 | unverified |
 | firecrawl | organic | undisclosed | opt-in | per-agreement | no limit stated | - | - | - | - | yes | yes | 100 | recorded |
 | searxng | organic | user-operated | opt-in | unspecified | no limit stated | - | - | yes | yes | yes | - | 200 | unverified |
 | wikipedia | organic | open-data | yes | allowed | no limit stated | Text from Wikipedia, CC BY-SA 4.0 | - | yes | - | - | - | 500 | recorded |
@@ -27,6 +30,9 @@ Terms reviewed per engine:
 - **mojeek**: [https://www.mojeek.com/services/search/web-search-api/](https://www.mojeek.com/services/search/web-search-api/), reviewed 2026-10-23. Entry plans allow caching for up to one hour; longer storage needs a plan that grants storage rights.
 - **marginalia**: [https://about.marginalia-search.com/article/api/](https://about.marginalia-search.com/article/api/), reviewed 2026-10-23. Free and shared 'public' keys license results CC-BY-NC-SA 4.0 (noncommercial).
 - **tavily**: [https://tavily.com/terms](https://tavily.com/terms), reviewed 2026-10-23. Does not disclose where results come from. Its answer field is model-generated.
+- **exa**: [https://exa.ai/terms](https://exa.ai/terms), reviewed 2026-10-23. Neural search over its own crawl, but sources are not documented per result.
+- **parallel**: [https://parallel.ai/terms-of-service](https://parallel.ai/terms-of-service), reviewed 2026-10-23. Agent-oriented search with query-relevant excerpts; index sources undisclosed.
+- **jina**: [https://jina.ai/legal](https://jina.ai/legal), reviewed 2026-10-23. Search plus reader; the backing index is not disclosed.
 - **firecrawl**: [https://www.firecrawl.dev/terms-of-service](https://www.firecrawl.dev/terms-of-service), reviewed 2026-10-23. Index provenance undisclosed; live results carry Google's srsltid parameter. Keyless tier is capped per IP.
 - **searxng**: [https://docs.searxng.org/](https://docs.searxng.org/), reviewed 2026-10-23. Rights follow the upstream engines your instance enables.
 - **wikipedia**: [https://foundation.wikimedia.org/wiki/Policy:Terms_of_Use](https://foundation.wikimedia.org/wiki/Policy:Terms_of_Use), reviewed 2026-10-23. Share-alike applies to reused text. API etiquette requires an identifying UA.
