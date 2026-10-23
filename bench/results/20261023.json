@@ -1,0 +1,318 @@
+{
+ "generated_at": "20261023T082359Z",
+ "queries": 50,
+ "configs": {
+  "wikipedia": {
+   "n": 44,
+   "answered_rate": 0.955,
+   "status_counts": {
+    "empty": 2,
+    "success": 42
+   },
+   "hit_at_1": 0.341,
+   "hit_at_3": 0.341,
+   "hit_at_10": 0.341,
+   "mrr_at_10": 0.341,
+   "domain_repeat_rate": 0.792,
+   "overlap_or_dupes_removed": 0.0,
+   "latency_p50_ms": 323,
+   "latency_p95_ms": 523,
+   "cost_per_1k_usd": 0.0,
+   "by_category": {
+    "entity": {
+     "n": 10,
+     "hit_at_3": 1.0,
+     "mrr_at_10": 1.0,
+     "entity_accuracy": 0.0
+    },
+    "multilingual": {
+     "n": 6,
+     "hit_at_3": 0.833,
+     "mrr_at_10": 0.833
+    },
+    "navigational": {
+     "n": 10,
+     "hit_at_3": 0.0,
+     "mrr_at_10": 0.0
+    },
+    "news": {
+     "n": 8,
+     "hit_at_3": 0.0,
+     "mrr_at_10": 0.0,
+     "dated_share_top5": 0.0,
+     "median_age_days": null,
+     "freshness_applied": 0.0
+    },
+    "technical": {
+     "n": 10,
+     "hit_at_3": 0.0,
+     "mrr_at_10": 0.0
+    }
+   }
+  },
+  "marginalia": {
+   "n": 44,
+   "answered_rate": 0.0,
+   "status_counts": {
+    "failed": 5,
+    "rate_limited": 39
+   },
+   "hit_at_1": 0.0,
+   "hit_at_3": 0.0,
+   "hit_at_10": 0.0,
+   "mrr_at_10": 0.0,
+   "domain_repeat_rate": 0.0,
+   "overlap_or_dupes_removed": 0.0,
+   "latency_p50_ms": null,
+   "latency_p95_ms": null,
+   "cost_per_1k_usd": 0.0,
+   "by_category": {
+    "entity": {
+     "n": 10,
+     "hit_at_3": 0.0,
+     "mrr_at_10": 0.0,
+     "entity_accuracy": 0.0
+    },
+    "multilingual": {
+     "n": 6,
+     "hit_at_3": 0.0,
+     "mrr_at_10": 0.0
+    },
+    "navigational": {
+     "n": 10,
+     "hit_at_3": 0.0,
+     "mrr_at_10": 0.0
+    },
+    "news": {
+     "n": 8,
+     "hit_at_3": 0.0,
+     "mrr_at_10": 0.0,
+     "dated_share_top5": 0.0,
+     "median_age_days": null,
+     "freshness_applied": 0.0
+    },
+    "technical": {
+     "n": 10,
+     "hit_at_3": 0.0,
+     "mrr_at_10": 0.0
+    }
+   }
+  },
+  "firecrawl": {
+   "n": 44,
+   "answered_rate": 0.386,
+   "status_counts": {
+    "rate_limited": 27,
+    "success": 17
+   },
+   "hit_at_1": 0.364,
+   "hit_at_3": 0.386,
+   "hit_at_10": 0.386,
+   "mrr_at_10": 0.375,
+   "domain_repeat_rate": 0.018,
+   "overlap_or_dupes_removed": 0.002,
+   "latency_p50_ms": 693,
+   "latency_p95_ms": 1766,
+   "cost_per_1k_usd": 0.0,
+   "by_category": {
+    "entity": {
+     "n": 10,
+     "hit_at_3": 0.0,
+     "mrr_at_10": 0.0,
+     "entity_accuracy": 0.0
+    },
+    "multilingual": {
+     "n": 6,
+     "hit_at_3": 0.0,
+     "mrr_at_10": 0.0
+    },
+    "navigational": {
+     "n": 10,
+     "hit_at_3": 0.7,
+     "mrr_at_10": 0.7
+    },
+    "news": {
+     "n": 8,
+     "hit_at_3": 0.0,
+     "mrr_at_10": 0.0,
+     "dated_share_top5": 0.0,
+     "median_age_days": null,
+     "freshness_applied": 1.0
+    },
+    "technical": {
+     "n": 10,
+     "hit_at_3": 1.0,
+     "mrr_at_10": 0.95
+    }
+   }
+  },
+  "auto-fast": {
+   "n": 44,
+   "answered_rate": 0.386,
+   "status_counts": {
+    "rate_limited": 27,
+    "success": 17
+   },
+   "hit_at_1": 0.364,
+   "hit_at_3": 0.386,
+   "hit_at_10": 0.386,
+   "mrr_at_10": 0.375,
+   "domain_repeat_rate": 0.018,
+   "overlap_or_dupes_removed": 0.002,
+   "latency_p50_ms": 693,
+   "latency_p95_ms": 1766,
+   "cost_per_1k_usd": 0.0,
+   "by_category": {
+    "entity": {
+     "n": 10,
+     "hit_at_3": 0.0,
+     "mrr_at_10": 0.0,
+     "entity_accuracy": 1.0
+    },
+    "multilingual": {
+     "n": 6,
+     "hit_at_3": 0.0,
+     "mrr_at_10": 0.0
+    },
+    "navigational": {
+     "n": 10,
+     "hit_at_3": 0.7,
+     "mrr_at_10": 0.7
+    },
+    "news": {
+     "n": 8,
+     "hit_at_3": 0.0,
+     "mrr_at_10": 0.0,
+     "dated_share_top5": 0.0,
+     "median_age_days": null,
+     "freshness_applied": 1.0
+    },
+    "technical": {
+     "n": 10,
+     "hit_at_3": 1.0,
+     "mrr_at_10": 0.95
+    }
+   }
+  },
+  "research-3": {
+   "n": 44,
+   "answered_rate": 1.0,
+   "status_counts": {
+    "partial": 43,
+    "success": 1
+   },
+   "hit_at_1": 0.568,
+   "hit_at_3": 0.727,
+   "hit_at_10": 0.727,
+   "mrr_at_10": 0.644,
+   "domain_repeat_rate": 0.661,
+   "overlap_or_dupes_removed": 0.133,
+   "latency_p50_ms": 427,
+   "latency_p95_ms": 10179,
+   "cost_per_1k_usd": 0.0,
+   "by_category": {
+    "entity": {
+     "n": 10,
+     "hit_at_3": 1.0,
+     "mrr_at_10": 1.0,
+     "entity_accuracy": 1.0
+    },
+    "multilingual": {
+     "n": 6,
+     "hit_at_3": 0.833,
+     "mrr_at_10": 0.833
+    },
+    "navigational": {
+     "n": 10,
+     "hit_at_3": 0.7,
+     "mrr_at_10": 0.4
+    },
+    "news": {
+     "n": 8,
+     "hit_at_3": 0.0,
+     "mrr_at_10": 0.0,
+     "dated_share_top5": 0.0,
+     "median_age_days": null,
+     "freshness_applied": 0.0
+    },
+    "technical": {
+     "n": 10,
+     "hit_at_3": 1.0,
+     "mrr_at_10": 0.933
+    }
+   }
+  },
+  "research-2": {
+   "n": 44,
+   "answered_rate": 1.0,
+   "status_counts": {
+    "partial": 27,
+    "success": 17
+   },
+   "hit_at_1": 0.568,
+   "hit_at_3": 0.727,
+   "hit_at_10": 0.727,
+   "mrr_at_10": 0.644,
+   "domain_repeat_rate": 0.666,
+   "overlap_or_dupes_removed": 0.127,
+   "latency_p50_ms": 427,
+   "latency_p95_ms": 1444,
+   "cost_per_1k_usd": 0.0,
+   "by_category": {
+    "entity": {
+     "n": 10,
+     "hit_at_3": 1.0,
+     "mrr_at_10": 1.0,
+     "entity_accuracy": 1.0
+    },
+    "multilingual": {
+     "n": 6,
+     "hit_at_3": 0.833,
+     "mrr_at_10": 0.833
+    },
+    "navigational": {
+     "n": 10,
+     "hit_at_3": 0.7,
+     "mrr_at_10": 0.4
+    },
+    "news": {
+     "n": 8,
+     "hit_at_3": 0.0,
+     "mrr_at_10": 0.0,
+     "dated_share_top5": 0.0,
+     "median_age_days": null,
+     "freshness_applied": 0.0
+    },
+    "technical": {
+     "n": 10,
+     "hit_at_3": 1.0,
+     "mrr_at_10": 0.933
+    }
+   }
+  },
+  "local": {
+   "n": 6,
+   "answered_rate": 1.0,
+   "status_counts": {
+    "success": 6
+   },
+   "hit_at_1": null,
+   "hit_at_3": null,
+   "hit_at_10": null,
+   "mrr_at_10": null,
+   "domain_repeat_rate": null,
+   "overlap_or_dupes_removed": null,
+   "latency_p50_ms": 1969,
+   "latency_p95_ms": 3281,
+   "cost_per_1k_usd": 0.0,
+   "by_category": {
+    "local": {
+     "n": 6,
+     "hit_at_3": 0.0,
+     "mrr_at_10": 0.0,
+     "local_success": 1.0
+    }
+   }
+  }
+ }
+}
