@@ -1,0 +1,9 @@
+{
+ "query": "coffee",
+ "answer": "Coffee is a brewed drink made from roasted coffee beans, the seeds of berries from Coffea plants.",
+ "results": [
+  {"title": "Coffee - Wikipedia", "url": "https://en.wikipedia.org/wiki/Coffee", "content": "Coffee is a beverage brewed from roasted, ground coffee beans.", "score": 0.91},
+  {"title": "Coffee | Nutrition Source", "url": "https://nutritionsource.hsph.harvard.edu/food-features/coffee/", "content": "One 8-ounce cup of brewed coffee contains about 95 mg of caffeine.", "score": 0.84, "published_date": "2025-11-02"}
+ ],
+ "response_time": 1.12
+}
