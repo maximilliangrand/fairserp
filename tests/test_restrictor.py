@@ -40,3 +40,19 @@ def test_multiple_paths_and_missing_keys():
 def test_unbalanced_braces():
     with pytest.raises(RestrictorError):
         apply(DATA, "organic_results[].{title")
+
+
+@pytest.mark.parametrize("bad", ["organic_results[x]", "a..b", "a.{b", "{", "a[1:2:3]", "a."])
+def test_validate_rejects_malformed(bad):
+    from fairserp.restrictor import validate
+
+    with pytest.raises(RestrictorError):
+        validate(bad)
+
+
+def test_validate_accepts_documented_forms():
+    from fairserp.restrictor import validate
+
+    for good in ["organic_results", "local_map, organic_results[0]", "organic_results[0:3]",
+                 "organic_results[].title", "organic_results[].{title, sitelinks.inline[].link}"]:
+        validate(good)
