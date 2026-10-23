@@ -14,9 +14,32 @@ services:
       - path: .env
         required: false
     environment:
-      FAIRSERP_API_KEYS: ${FAIRSERP_API_KEYS:?set FAIRSERP_API_KEYS (comma separated keys)}
-      FAIRSERP_CACHE_BACKEND: redis://redis-cache:6379/0
-      FAIRSERP_STATE_BACKEND: redis://redis-state:6379/0
+      - FAIRSERP_API_KEYS=${FAIRSERP_API_KEYS:?set FAIRSERP_API_KEYS (comma separated keys)}
+      - FAIRSERP_CACHE_BACKEND=redis://redis-cache:6379/0
+      - FAIRSERP_STATE_BACKEND=redis://redis-state:6379/0
+      # Passed through from the shell when set (a bare name forwards the host value).
+      - FAIRSERP_PUBLIC_URL
+      - FAIRSERP_PROFILE
+      - FAIRSERP_OPT_IN
+      - FAIRSERP_NONCOMMERCIAL_DEPLOYMENT
+      - FAIRSERP_SERPAPI_ENGINES
+      - FAIRSERP_ORGANIC_PRIORITY
+      - FAIRSERP_ENRICHERS
+      - FAIRSERP_STRICT_PARAMS
+      - FAIRSERP_UPSTREAM_BUDGETS
+      - FAIRSERP_USER_AGENT
+      - FAIRSERP_LOG_QUERIES
+      - FAIRSERP_BRAVE_API_KEY
+      - FAIRSERP_MOJEEK_API_KEY
+      - FAIRSERP_TAVILY_API_KEY
+      - FAIRSERP_EXA_API_KEY
+      - FAIRSERP_PARALLEL_API_KEY
+      - FAIRSERP_JINA_API_KEY
+      - FAIRSERP_FIRECRAWL_API_KEY
+      - FAIRSERP_MARGINALIA_API_KEY
+      - FAIRSERP_MARGINALIA_COMMERCIAL_KEY
+      - FAIRSERP_SEARXNG_URL
+      - FAIRSERP_NOMINATIM_URL
     depends_on:
       redis-cache:
         condition: service_healthy
