@@ -1,5 +1,6 @@
 """Text helpers shared by parsers and renderers."""
 
+import html
 import re
 from urllib.parse import urlsplit
 
@@ -32,7 +33,7 @@ def clean_text(text: str | None) -> str:
     """Flatten markdown or HTML into one line of plain text."""
     if not text:
         return ""
-    text = _HTML_TAG.sub("", text)
+    text = html.unescape(_HTML_TAG.sub("", text))
     text = _MARKDOWN_IMAGE.sub("", text)
     text = _MARKDOWN_LINK.sub(r"\1", text)
     text = _MARKDOWN_NOISE.sub(" ", text)

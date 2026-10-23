@@ -353,3 +353,13 @@ def test_locations_requires_a_key_and_handles_bad_upstream_data():
         route.respond(json=[{"unexpected": True}])
         broken = c.get("/locations.json", params={"q": "Bogus"}, headers=AUTH)
     assert broken.status_code == 502 and "error" in broken.json()
+
+
+def test_playground_is_served_under_a_hash_csp():
+    with client(stubs.organic("a")) as c:
+        response = c.get("/")
+    csp = response.headers["Content-Security-Policy"]
+    assert response.status_code == 200 and "fairserp playground" in response.text
+    assert "script-src 'sha256-" in csp and "unsafe-inline" not in csp
+    assert "connect-src 'self'" in csp
+    assert "fonts.googleapis" not in response.text and "<script src" not in response.text

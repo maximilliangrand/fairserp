@@ -1,0 +1,701 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>fairserp playground</title>
+<meta name="description" content="Run a search through your fairserp server and inspect where every result came from.">
+<style>
+/* Hallmark · genre: modern-minimal · macrostructure: Workbench · theme: Cobalt · enrichment: none · nav: N9 edge-aligned bar · footer: Ft2 inline
+ * mode: operate · fonts: platform faces (self-hosted tool, no third-party requests) · motion: none beyond state transitions
+ * Hallmark · pre-emit critique: P4 H4 E4 S5 R5 V4 */
+:root {
+  color-scheme: light;
+  --color-paper: oklch(98.5% 0.004 250);
+  --color-paper-2: oklch(96.4% 0.006 252);
+  --color-surface: oklch(99.4% 0.002 250);
+  --color-ink: oklch(24% 0.02 258);
+  --color-ink-2: oklch(34% 0.018 257);
+  --color-muted: oklch(50% 0.016 256);
+  --color-rule: oklch(90.5% 0.008 254);
+  --color-rule-2: oklch(84% 0.012 254);
+  --color-accent: oklch(52% 0.2 256);
+  --color-accent-ink: oklch(98.5% 0.004 250);
+  --color-accent-soft: oklch(94% 0.03 256);
+  --color-ok: oklch(52% 0.13 155);
+  --color-warn: oklch(60% 0.14 70);
+  --color-bad: oklch(54% 0.18 28);
+  --color-idle: oklch(70% 0.01 256);
+  --color-graphite: oklch(22% 0.016 260);
+  --color-graphite-ink: oklch(90% 0.01 255);
+  --color-selection: oklch(88% 0.06 256);
+  /* The platform's own faces on purpose: an operator tool that makes no third-party requests. */
+  --font-display: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-body: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --text-xs: 0.75rem; --text-sm: 0.8125rem; --text-base: 0.9375rem; --text-lg: 1.0625rem;
+  --text-xl: 1.375rem; --text-2xl: 1.75rem;
+  --space-2xs: 0.25rem; --space-xs: 0.5rem; --space-sm: 0.75rem; --space-md: 1rem;
+  --space-lg: 1.5rem; --space-xl: 2rem; --space-2xl: 3rem;
+  --radius-sm: 6px; --radius-md: 10px;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-fast: 120ms; --dur-base: 180ms;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --color-paper: oklch(18.5% 0.014 260); --color-paper-2: oklch(21.5% 0.016 260);
+    --color-surface: oklch(21% 0.015 260); --color-ink: oklch(94% 0.008 255);
+    --color-ink-2: oklch(84% 0.012 255); --color-muted: oklch(66% 0.016 256);
+    --color-rule: oklch(29% 0.018 260); --color-rule-2: oklch(36% 0.02 260);
+    --color-accent: oklch(70% 0.16 256); --color-accent-ink: oklch(18% 0.02 260);
+    --color-accent-soft: oklch(28% 0.06 256); --color-ok: oklch(72% 0.14 155);
+    --color-warn: oklch(78% 0.13 75); --color-bad: oklch(70% 0.16 28);
+    --color-idle: oklch(52% 0.012 256); --color-graphite: oklch(14.5% 0.012 260);
+    --color-selection: oklch(36% 0.08 256);
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --color-paper: oklch(18.5% 0.014 260); --color-paper-2: oklch(21.5% 0.016 260);
+  --color-surface: oklch(21% 0.015 260); --color-ink: oklch(94% 0.008 255);
+  --color-ink-2: oklch(84% 0.012 255); --color-muted: oklch(66% 0.016 256);
+  --color-rule: oklch(29% 0.018 260); --color-rule-2: oklch(36% 0.02 260);
+  --color-accent: oklch(70% 0.16 256); --color-accent-ink: oklch(18% 0.02 260);
+  --color-accent-soft: oklch(28% 0.06 256); --color-ok: oklch(72% 0.14 155);
+  --color-warn: oklch(78% 0.13 75); --color-bad: oklch(70% 0.16 28);
+  --color-idle: oklch(52% 0.012 256); --color-graphite: oklch(14.5% 0.012 260);
+  --color-selection: oklch(36% 0.08 256);
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html, body { overflow-x: clip; }
+body {
+  margin: 0; background: var(--color-paper); color: var(--color-ink-2);
+  font: 400 var(--text-base)/1.55 var(--font-body);
+  -webkit-font-smoothing: antialiased; caret-color: var(--color-accent);
+}
+::selection { background: var(--color-selection); color: var(--color-ink); }
+* { scrollbar-color: var(--color-rule-2) transparent; scrollbar-width: thin; }
+a { color: var(--color-ink); text-decoration-color: var(--color-rule-2);
+    text-underline-offset: 3px; text-decoration-thickness: 1px; }
+a:hover { text-decoration-color: var(--color-accent); }
+:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+h1, h2, h3 { font-family: var(--font-display); color: var(--color-ink); font-weight: 600;
+             letter-spacing: -0.02em; text-wrap: balance; margin: 0; }
+.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+
+/* Bar */
+.bar { display: flex; align-items: center; gap: var(--space-lg); flex-wrap: wrap;
+       padding: var(--space-sm) var(--space-lg); border-bottom: 1px solid var(--color-rule);
+       background: var(--color-paper); }
+.wordmark { font-family: var(--font-display); font-weight: 600; font-size: var(--text-lg);
+            color: var(--color-ink); letter-spacing: -0.02em; text-decoration: none;
+            white-space: nowrap; }
+.bar nav { display: flex; gap: var(--space-md); font-size: var(--text-sm); }
+.bar nav a { color: var(--color-muted); text-decoration: none; white-space: nowrap; }
+.bar nav a:hover { color: var(--color-ink); text-decoration: underline;
+                   text-decoration-color: var(--color-accent); }
+.bar-tools { margin-left: auto; display: flex; gap: var(--space-xs); align-items: center;
+             min-width: 0; }
+
+/* Controls */
+label { font-size: var(--text-xs); color: var(--color-muted); }
+input, select, button { font: inherit; color: inherit; }
+.field { display: grid; gap: var(--space-2xs); min-width: 0; }
+.input, select.input {
+  height: 2.375rem; padding: 0 var(--space-sm); border: 1px solid var(--color-rule-2);
+  border-radius: var(--radius-sm); background: var(--color-surface); color: var(--color-ink);
+  transition: border-color var(--dur-fast) var(--ease-out);
+  min-width: 0; width: 100%;
+}
+.input:hover { border-color: var(--color-muted); }
+.input:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 0;
+                       border-color: var(--color-accent); }
+.input:disabled { opacity: 0.55; cursor: not-allowed; }
+.input[aria-invalid="true"] { border-color: var(--color-bad); }
+.input--key { width: 15rem; font-family: var(--font-mono); font-size: var(--text-sm); }
+.btn {
+  height: 2.375rem; padding: 0 var(--space-md); border-radius: var(--radius-sm);
+  border: 1px solid var(--color-rule-2); background: var(--color-surface);
+  color: var(--color-ink); cursor: pointer; white-space: nowrap;
+  transition: background-color var(--dur-fast) var(--ease-out),
+              border-color var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out);
+}
+.btn:hover { border-color: var(--color-muted); background: var(--color-paper-2); }
+.btn:active { transform: translateY(1px); }
+.btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+.btn--primary { background: var(--color-accent); border-color: var(--color-accent);
+                color: var(--color-accent-ink); font-weight: 500; }
+.btn--primary:hover { background: var(--color-accent); filter: brightness(1.08);
+                      border-color: var(--color-accent); }
+.btn--primary[aria-busy="true"] { cursor: progress; }
+.btn--quiet { border-color: transparent; background: transparent; color: var(--color-muted); }
+.btn--quiet:hover { color: var(--color-ink); background: var(--color-paper-2);
+                    border-color: transparent; }
+
+/* Workbench */
+main { padding: var(--space-xl) var(--space-lg) var(--space-2xl); max-width: 84rem;
+       margin: 0 auto; }
+.query { display: grid; gap: var(--space-sm);
+         grid-template-columns: minmax(0, 1fr) repeat(4, minmax(0, 8.5rem)) auto;
+         align-items: end; }
+.query .input--q { height: 2.875rem; font-size: var(--text-lg); }
+.query .btn--primary { height: 2.875rem; padding: 0 var(--space-lg); }
+.hint { margin: var(--space-sm) 0 0; font-size: var(--text-sm); color: var(--color-muted); }
+.hint button { background: none; border: 0; padding: 0; color: var(--color-ink-2);
+               text-decoration: underline; text-decoration-color: var(--color-rule-2);
+               text-underline-offset: 3px; cursor: pointer; }
+.hint button:hover { text-decoration-color: var(--color-accent); color: var(--color-ink); }
+
+.summary { margin-top: var(--space-xl); padding: var(--space-md) 0;
+           border-top: 1px solid var(--color-rule); border-bottom: 1px solid var(--color-rule);
+           display: grid; gap: var(--space-sm); }
+.summary-line { display: flex; flex-wrap: wrap; gap: var(--space-xs) var(--space-lg);
+                align-items: baseline; font-size: var(--text-sm); }
+.summary-line dt { color: var(--color-muted); }
+.summary-line dd { margin: 0 0 0 var(--space-2xs); color: var(--color-ink); }
+.summary-line div { display: flex; align-items: baseline; }
+.status { display: inline-flex; align-items: center; gap: var(--space-xs);
+          font-family: var(--font-mono); font-size: var(--text-xs); text-transform: uppercase;
+          letter-spacing: 0.06em; color: var(--color-ink); }
+.dot { width: 0.5rem; height: 0.5rem; border-radius: 50%; background: var(--color-idle);
+       flex: none; }
+[data-tone="ok"] .dot { background: var(--color-ok); }
+[data-tone="warn"] .dot { background: var(--color-warn); }
+[data-tone="bad"] .dot { background: var(--color-bad); }
+.providers { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap;
+             gap: var(--space-xs); }
+.provider { display: inline-flex; align-items: center; gap: var(--space-xs);
+            padding: var(--space-2xs) var(--space-sm); border: 1px solid var(--color-rule);
+            border-radius: var(--radius-sm); font-family: var(--font-mono);
+            font-size: var(--text-xs); color: var(--color-ink-2); background: var(--color-surface); }
+.provider .meta { color: var(--color-muted); }
+.params { font-size: var(--text-sm); color: var(--color-muted); margin: 0; }
+.params .mono { color: var(--color-ink-2); }
+
+.layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 22rem);
+          gap: var(--space-2xl); margin-top: var(--space-xl); }
+.results { list-style: none; margin: 0; padding: 0; counter-reset: none; }
+.result { display: grid; grid-template-columns: 2.25rem minmax(0, 1fr); gap: var(--space-sm);
+          padding: var(--space-md) 0; border-bottom: 1px solid var(--color-rule); }
+.result:first-child { padding-top: 0; }
+.rank { font-family: var(--font-mono); font-size: var(--text-sm); color: var(--color-muted);
+        padding-top: 0.15rem; font-variant-numeric: tabular-nums; }
+.result h3 { font-family: var(--font-body); font-size: var(--text-lg); font-weight: 500;
+             letter-spacing: -0.01em; line-height: 1.35; overflow-wrap: anywhere; }
+.result h3 a { color: var(--color-ink); text-decoration: none; }
+.result h3 a:hover { text-decoration: underline; text-decoration-color: var(--color-accent); }
+.url { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--color-muted);
+       overflow-wrap: anywhere; margin: var(--space-2xs) 0; }
+.snippet { margin: var(--space-2xs) 0 var(--space-xs); max-width: 72ch; text-wrap: pretty; }
+.badges { display: flex; flex-wrap: wrap; gap: var(--space-xs); }
+.badge { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--color-ink-2);
+         border: 1px solid var(--color-rule); border-radius: var(--radius-sm);
+         padding: 0.0625rem var(--space-xs); background: var(--color-paper-2); }
+.badge--date { color: var(--color-muted); background: transparent; }
+
+.layout > * { min-width: 0; }
+aside { display: grid; gap: var(--space-xl); align-content: start; min-width: 0; }
+aside > * { min-width: 0; }
+aside section { display: grid; gap: var(--space-sm); }
+aside h2 { font-size: var(--text-base); }
+.entity p, .answer p { margin: 0; font-size: var(--text-sm); text-wrap: pretty; }
+.entity img { width: 100%; max-height: 12rem; object-fit: cover; border-radius: var(--radius-sm);
+              border: 1px solid var(--color-rule); background: var(--color-paper-2); }
+.facts { display: grid; grid-template-columns: max-content minmax(0, 1fr);
+         gap: var(--space-2xs) var(--space-md); margin: 0; font-size: var(--text-sm); }
+.facts dt { color: var(--color-muted); }
+.facts dd { margin: 0; color: var(--color-ink); overflow-wrap: anywhere; }
+.places { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-sm);
+          font-size: var(--text-sm); }
+.places li { display: grid; gap: 0.125rem; overflow-wrap: anywhere; }
+.places strong { color: var(--color-ink); font-weight: 500; }
+.places span { color: var(--color-muted); }
+.generated { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--color-warn);
+             text-transform: uppercase; letter-spacing: 0.06em; }
+.copy { display: grid; gap: var(--space-xs); }
+.copy-tabs { display: flex; gap: var(--space-2xs); }
+.copy-tabs .btn { height: 2rem; font-size: var(--text-sm); }
+.copy-tabs .btn[aria-pressed="true"] { border-color: var(--color-accent);
+                                        color: var(--color-ink); background: var(--color-accent-soft); }
+pre.code { margin: 0; padding: var(--space-md); background: var(--color-graphite); max-width: 100%;
+           color: var(--color-graphite-ink); border-radius: var(--radius-md);
+           font: 400 var(--text-xs)/1.6 var(--font-mono); overflow: auto; white-space: pre; }
+.raw summary { cursor: pointer; font-size: var(--text-sm); color: var(--color-muted); }
+.raw summary:hover { color: var(--color-ink); }
+.raw pre.code { margin-top: var(--space-sm); max-height: 28rem; }
+
+.empty, .error { padding: var(--space-xl) 0; max-width: 60ch; }
+.empty h2, .error h2 { font-size: var(--text-xl); margin-bottom: var(--space-xs); }
+.empty p, .error p { margin: 0 0 var(--space-xs); }
+.error { color: var(--color-ink); }
+.error h2 { color: var(--color-bad); }
+.skeleton { height: 4.5rem; border-bottom: 1px solid var(--color-rule);
+            background: linear-gradient(var(--color-paper-2), var(--color-paper-2))
+                        0 0.75rem / 60% 0.875rem no-repeat,
+                        linear-gradient(var(--color-paper-2), var(--color-paper-2))
+                        0 2rem / 85% 0.75rem no-repeat; }
+[hidden] { display: none !important; }
+
+footer { border-top: 1px solid var(--color-rule); padding: var(--space-md) var(--space-lg);
+         font-size: var(--text-xs); color: var(--color-muted); display: flex; flex-wrap: wrap;
+         gap: var(--space-xs) var(--space-lg); justify-content: space-between; }
+footer p { margin: 0; }
+
+@media (max-width: 960px) {
+  .layout { grid-template-columns: minmax(0, 1fr); gap: var(--space-xl); }
+  .query { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .query .field--q { grid-column: 1 / -1; }
+  .query .btn--primary { grid-column: 1 / -1; }
+}
+@media (max-width: 520px) {
+  .bar { padding: var(--space-sm) var(--space-md); gap: var(--space-sm); }
+  .bar-tools { margin-left: 0; width: 100%; }
+  .input--key { width: auto; flex: 1; }
+  main { padding: var(--space-lg) var(--space-md) var(--space-xl); }
+  .query { grid-template-columns: minmax(0, 1fr); }
+  .result { grid-template-columns: 1.75rem minmax(0, 1fr); }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: 0ms !important; }
+}
+</style>
+</head>
+<body>
+<header class="bar">
+  <a class="wordmark" href="/">fairserp</a>
+  <nav aria-label="Server">
+    <a href="/docs">API reference</a>
+    <a href="/v1/engines" id="engines-link">Engines</a>
+    <a href="/readyz">Readiness</a>
+  </nav>
+  <div class="bar-tools">
+    <label class="sr-only" for="key">API key</label>
+    <input class="input input--key" id="key" type="password" autocomplete="off"
+           spellcheck="false" placeholder="API key (blank if auth is off)">
+    <button class="btn btn--quiet" id="theme" type="button" aria-label="Switch color theme">Dark</button>
+  </div>
+</header>
+
+<main>
+  <h1 class="sr-only">Search playground</h1>
+  <form class="query" id="form" role="search">
+    <div class="field field--q">
+      <label for="q">Query</label>
+      <input class="input input--q" id="q" name="q" required maxlength="500"
+             autocomplete="off" placeholder="rust async runtime comparison">
+    </div>
+    <div class="field">
+      <label for="engine-select">Engine</label>
+      <select class="input" id="engine-select" name="engine">
+        <option value="auto">Auto</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="mode">Mode</label>
+      <select class="input" id="mode" name="mode">
+        <option value="fast">Fast</option>
+        <option value="research">Research</option>
+        <option value="private">Private</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="freshness">Freshness</label>
+      <select class="input" id="freshness" name="freshness">
+        <option value="">Any time</option>
+        <option value="h">Past hour</option>
+        <option value="d">Past day</option>
+        <option value="w">Past week</option>
+        <option value="m">Past month</option>
+        <option value="y">Past year</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="location">Near (optional)</label>
+      <input class="input" id="location" name="location" maxlength="200"
+             autocomplete="off" placeholder="Austin, Texas">
+    </div>
+    <button class="btn btn--primary" id="go" type="submit">Search</button>
+  </form>
+  <p class="hint">Try
+    <button type="button" data-example="einstein">einstein</button>,
+    <button type="button" data-example="pizza" data-near="Brooklyn, New York">pizza near Brooklyn</button> or
+    <button type="button" data-example="postgres jsonb gin index">postgres jsonb gin index</button>.
+    Press <kbd class="mono">/</kbd> to focus the query.
+  </p>
+
+  <section class="summary" id="summary" hidden aria-live="polite">
+    <dl class="summary-line">
+      <div><dt>Status</dt><dd><span class="status" id="status"><span class="dot"></span><span></span></span></dd></div>
+      <div><dt>Engine</dt><dd class="mono" id="engine"></dd></div>
+      <div><dt>Time</dt><dd class="mono" id="elapsed"></dd></div>
+      <div><dt>Keep until</dt><dd class="mono" id="retention"></dd></div>
+    </dl>
+    <ul class="providers" id="providers" aria-label="Providers"></ul>
+    <p class="params" id="params"></p>
+  </section>
+
+  <div class="layout">
+    <section aria-label="Results">
+      <div class="empty" id="empty">
+        <h2>Every result says where it came from.</h2>
+        <p>Run a query to see which provider returned each result, at what rank, under what
+           provenance, and how long this server may keep it.</p>
+        <p>Engines that cannot honor a parameter are reported, not hidden.</p>
+      </div>
+      <div class="error" id="error" hidden role="alert">
+        <h2 id="error-title"></h2>
+        <p id="error-body"></p>
+        <p id="error-hint"></p>
+      </div>
+      <div id="loading" hidden aria-busy="true" aria-label="Searching">
+        <div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>
+      </div>
+      <ol class="results" id="results"></ol>
+    </section>
+
+    <aside>
+      <section class="answer" id="answer" hidden>
+        <h2>Answer</h2>
+        <span class="generated" id="answer-generated" hidden>Written by a model</span>
+        <p id="answer-text"></p>
+      </section>
+      <section class="entity" id="entity" hidden>
+        <h2 id="entity-title"></h2>
+        <div id="entity-media"></div>
+        <p id="entity-desc"></p>
+        <dl class="facts" id="entity-facts"></dl>
+      </section>
+      <section id="places-section" hidden>
+        <h2>Places</h2>
+        <ol class="places" id="places"></ol>
+      </section>
+      <section class="copy">
+        <h2>Run this elsewhere</h2>
+        <div class="copy-tabs" role="group" aria-label="Snippet format">
+          <button class="btn" type="button" data-copy="curl" aria-pressed="true">curl</button>
+          <button class="btn" type="button" data-copy="python" aria-pressed="false">Python</button>
+          <button class="btn" type="button" data-copy="mcp" aria-pressed="false">MCP</button>
+        </div>
+        <pre class="code" id="snippet"></pre>
+        <button class="btn" type="button" id="copy">Copy snippet</button>
+      </section>
+      <details class="raw" id="raw" hidden>
+        <summary>Raw response</summary>
+        <pre class="code" id="raw-json"></pre>
+      </details>
+    </aside>
+  </div>
+</main>
+
+<footer>
+  <p id="attribution">Results stay under each provider's terms. Attribution appears here after a search.</p>
+  <p>fairserp playground. Queries go only to this server.</p>
+</footer>
+
+<script>
+(() => {
+  "use strict";
+  const $ = (id) => document.getElementById(id);
+  const store = {
+    get(k) { try { return localStorage.getItem(k); } catch { return null; } },
+    set(k, v) { try { localStorage.setItem(k, v); } catch { /* storage unavailable */ } },
+  };
+  const TONE = { ok: "ok", success: "ok", empty: "warn", partial: "warn", cached: "ok",
+                 timeout: "warn", rate_limited: "bad", failed: "bad", skipped: "idle" };
+  const keyInput = $("key");
+  keyInput.value = store.get("fairserp.key") || "";
+  keyInput.addEventListener("change", () => store.set("fairserp.key", keyInput.value.trim()));
+
+  const root = document.documentElement;
+  const themeButton = $("theme");
+  function applyTheme(theme) {
+    if (theme) root.dataset.theme = theme; else delete root.dataset.theme;
+    const dark = theme ? theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+    themeButton.textContent = dark ? "Light" : "Dark";
+  }
+  applyTheme(store.get("fairserp.theme"));
+  themeButton.addEventListener("click", () => {
+    const next = themeButton.textContent === "Dark" ? "dark" : "light";
+    store.set("fairserp.theme", next);
+    applyTheme(next);
+  });
+
+  function el(tag, attrs = {}, text) {
+    const node = document.createElement(tag);
+    for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, v);
+    if (text !== undefined && text !== null) node.textContent = String(text);
+    return node;
+  }
+  function safeHref(url) {
+    try { const u = new URL(url); return /^https?:$/.test(u.protocol) ? u.href : null; }
+    catch { return null; }
+  }
+  function headers() {
+    const key = keyInput.value.trim();
+    return key ? { Authorization: `Bearer ${key}` } : {};
+  }
+
+  function params() {
+    const p = new URLSearchParams({ q: $("q").value.trim(), mode: $("mode").value });
+    if ($("engine-select").value !== "auto") p.set("engine", $("engine-select").value);
+    if ($("freshness").value) p.set("freshness", $("freshness").value);
+    if ($("location").value.trim()) {
+      p.set("location", $("location").value.trim());
+    }
+    return p;
+  }
+
+  let snippetKind = "curl";
+  function renderSnippet() {
+    const base = location.origin;
+    const p = params();
+    const q = p.get("q") || "rust async runtime";
+    const snippets = {
+      curl: `curl -H "Authorization: Bearer $FAIRSERP_KEY" \\\n  "${base}/v1/search?${p.toString() || "q=" + encodeURIComponent(q)}"`,
+      python: `from fairserp.client import Fairserp\n\nclient = Fairserp(base_url="${base}", api_key="...")\noutcome = client.search(${JSON.stringify(q)}, mode=${JSON.stringify($("mode").value)})\nfor result in outcome.results:\n    print(result.rank, result.url, [s.engine for s in result.sources])`,
+      mcp: `{\n  "mcpServers": {\n    "fairserp": {\n      "command": "uvx",\n      "args": ["--from", "git+https://github.com/maximilliangrand/fairserp", "fairserp", "mcp"]\n    }\n  }\n}`,
+    };
+    $("snippet").textContent = snippets[snippetKind];
+  }
+  document.querySelectorAll("[data-copy]").forEach((button) => {
+    button.addEventListener("click", () => {
+      snippetKind = button.dataset.copy;
+      document.querySelectorAll("[data-copy]").forEach((b) =>
+        b.setAttribute("aria-pressed", String(b === button)));
+      renderSnippet();
+    });
+  });
+  $("copy").addEventListener("click", async () => {
+    const button = $("copy");
+    try {
+      await navigator.clipboard.writeText($("snippet").textContent);
+      button.textContent = "Copied";
+    } catch {
+      button.textContent = "Select and copy manually";
+    }
+    setTimeout(() => { button.textContent = "Copy snippet"; }, 1600);
+  });
+  ["mode", "freshness", "location", "q"].forEach((id) => $(id).addEventListener("input", renderSnippet));
+
+  function setStatus(target, value) {
+    const tone = TONE[value] || "idle";
+    target.dataset.tone = tone;
+    target.querySelector("span:last-child").textContent = value.replace("_", " ");
+  }
+
+  function showError(title, body, hint) {
+    $("error").hidden = false;
+    $("error-title").textContent = title;
+    $("error-body").textContent = body;
+    $("error-hint").textContent = hint || "";
+  }
+
+  function render(data) {
+    $("summary").hidden = false;
+    setStatus($("status"), data.status);
+    $("engine").textContent = data.resolved_engine === data.requested_engine
+      ? data.resolved_engine : `${data.requested_engine} as ${data.resolved_engine}`;
+    $("elapsed").textContent = `${data.elapsed_ms} ms`;
+    $("retention").textContent = data.retention && data.retention.expires_at
+      ? data.retention.expires_at.replace("T", " ").replace("+00:00", " UTC") : "no provider limit";
+
+    const providers = $("providers");
+    providers.replaceChildren();
+    for (const p of data.providers || []) {
+      const state = p.cached ? "cached" : p.status;
+      const item = el("li", { class: "provider", "data-tone": TONE[state] || "idle",
+                              title: p.error || `${p.role}, ${p.results} results` });
+      item.append(el("span", { class: "dot", "aria-hidden": "true" }), el("span", {}, p.engine));
+      const meta = p.cached ? "cached" : p.latency_ms != null ? `${p.status} ${p.latency_ms} ms` : p.status;
+      item.append(el("span", { class: "meta" }, meta.replace("_", " ")));
+      providers.append(item);
+    }
+
+    const pr = data.params || { applied: [], ignored: [] };
+    const paramsLine = $("params");
+    paramsLine.replaceChildren();
+    if (pr.applied.length || pr.ignored.length) {
+      if (pr.applied.length) paramsLine.append("Applied ", el("span", { class: "mono" }, pr.applied.join(", ")));
+      if (pr.applied.length && pr.ignored.length) paramsLine.append(". ");
+      if (pr.ignored.length) paramsLine.append("Ignored by the answering engine ", el("span", { class: "mono" }, pr.ignored.join(", ")));
+      paramsLine.append(".");
+    } else {
+      paramsLine.textContent = "No optional parameters requested.";
+    }
+
+    const list = $("results");
+    list.replaceChildren();
+    for (const r of data.results || []) {
+      const item = el("li", { class: "result" });
+      item.append(el("span", { class: "rank" }, r.rank));
+      const body = el("div");
+      const title = el("h3");
+      const href = safeHref(r.url);
+      if (href) {
+        const link = el("a", { href, rel: "noopener noreferrer nofollow" }, r.title || r.url);
+        title.append(link);
+      } else {
+        title.textContent = r.title || r.url;
+      }
+      body.append(title, el("p", { class: "url" }, r.url));
+      if (r.snippet) body.append(el("p", { class: "snippet" }, r.snippet));
+      const badges = el("div", { class: "badges" });
+      for (const s of r.sources || []) {
+        badges.append(el("span", { class: "badge", title: `Provenance: ${s.provenance}` },
+                         `${s.engine} #${s.rank} · ${s.provenance}`));
+      }
+      if (r.published_at) badges.append(el("span", { class: "badge badge--date" }, `published ${r.published_at}`));
+      if (r.updated_at) badges.append(el("span", { class: "badge badge--date" }, `updated ${r.updated_at}`));
+      body.append(badges);
+      item.append(body);
+      list.append(item);
+    }
+    if (!(data.results || []).length && !(data.places || []).length) {
+      showError(data.status === "empty" ? "No results" : "Nothing came back",
+                data.error || "Every provider answered with an empty result.",
+                "Try a broader query or another mode.");
+    }
+
+    const answer = data.answer;
+    $("answer").hidden = !answer;
+    if (answer) {
+      $("answer-text").textContent = answer.text;
+      $("answer-generated").hidden = !answer.generated;
+    }
+    const entity = data.entity;
+    $("entity").hidden = !entity;
+    if (entity) {
+      $("entity-title").textContent = entity.title;
+      $("entity-desc").textContent = entity.description || entity.type || "";
+      const media = $("entity-media");
+      media.replaceChildren();
+      const src = entity.image && safeHref(entity.image);
+      if (src) media.append(el("img", { src, alt: entity.title, loading: "lazy",
+                                         referrerpolicy: "no-referrer" }));
+      const facts = $("entity-facts");
+      facts.replaceChildren();
+      const rows = Object.entries(entity.attributes || {}).slice(0, 8);
+      if (entity.wikidata_id) rows.unshift(["wikidata", entity.wikidata_id]);
+      for (const [k, v] of rows) facts.append(el("dt", {}, k.replaceAll("_", " ")), el("dd", {}, v));
+    }
+    const places = $("places");
+    places.replaceChildren();
+    $("places-section").hidden = !(data.places || []).length;
+    for (const p of data.places || []) {
+      const item = el("li");
+      item.append(el("strong", {}, p.name));
+      const detail = [p.category, p.address, p.distance_m != null ? `${(p.distance_m / 1000).toFixed(1)} km` : ""]
+        .filter(Boolean).join(", ");
+      item.append(el("span", {}, detail));
+      if (p.hours) item.append(el("span", { class: "mono" }, p.hours));
+      places.append(item);
+    }
+    $("attribution").textContent = (data.attribution || []).length
+      ? `Sources: ${data.attribution.join("; ")}.`
+      : "No attribution required by the providers that answered.";
+    $("raw").hidden = false;
+    $("raw-json").textContent = JSON.stringify(data, null, 2);
+  }
+
+  async function search(event) {
+    if (event) event.preventDefault();
+    const q = $("q").value.trim();
+    $("q").setAttribute("aria-invalid", String(!q));
+    if (!q) { $("q").focus(); return; }
+    const button = $("go");
+    button.disabled = true;
+    button.setAttribute("aria-busy", "true");
+    button.textContent = "Searching";
+    $("empty").hidden = true;
+    $("error").hidden = true;
+    $("results").replaceChildren();
+    $("loading").hidden = false;
+    const p = params();
+    if (p.get("location")) p.set("vertical", "local");
+    history.replaceState(null, "", `?${p}`);
+    try {
+      const response = await fetch(`/v1/search?${p}`, { headers: headers() });
+      const data = await response.json().catch(() => null);
+      if (response.status === 401) {
+        showError("API key needed", "This server requires a key.", "Paste one into the field at the top right; it stays in this browser.");
+      } else if (data && data.status) {
+        render(data);
+      } else {
+        const message = data && data.error ? (data.error.message || data.error) : `HTTP ${response.status}`;
+        showError("The server refused this search", message,
+                  response.status === 503 ? "Add a provider key or opt in to a provider; /v1/engines lists why each one is off." : "");
+      }
+    } catch (err) {
+      showError("Could not reach the server", String(err.message || err), "Check that fairserp is running.");
+    } finally {
+      $("loading").hidden = true;
+      button.disabled = false;
+      button.removeAttribute("aria-busy");
+      button.textContent = "Search";
+    }
+  }
+
+  $("form").addEventListener("submit", search);
+  document.querySelectorAll("[data-example]").forEach((b) => b.addEventListener("click", () => {
+    $("q").value = b.dataset.example;
+    $("location").value = b.dataset.near || "";
+    renderSnippet();
+    search();
+  }));
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "/" && document.activeElement.tagName !== "INPUT" && document.activeElement.tagName !== "SELECT") {
+      e.preventDefault();
+      $("q").focus();
+    }
+  });
+  $("engines-link").addEventListener("click", async (e) => {
+    if (!keyInput.value.trim()) return;
+    e.preventDefault();
+    const response = await fetch("/v1/engines", { headers: headers() });
+    const data = await response.json();
+    renderEngines(data);
+  });
+  function renderEngines(data) {
+    $("raw").hidden = false;
+    $("raw").open = true;
+    $("raw-json").textContent = JSON.stringify(data, null, 2);
+  }
+  async function loadEngines() {
+    try {
+      const response = await fetch("/v1/engines", { headers: headers() });
+      if (!response.ok) return;
+      const data = await response.json();
+      const select = $("engine-select");
+      select.replaceChildren(el("option", { value: "auto" }, "Auto"));
+      for (const engine of data.engines) {
+        if (!engine.enabled || engine.role !== "organic") continue;
+        select.append(el("option", { value: engine.name, title: engine.rights.provenance },
+                         engine.name));
+      }
+    } catch { /* the engine list is a convenience; search still works with Auto */ }
+  }
+
+  async function start() {
+    await loadEngines();
+    const initial = new URLSearchParams(location.search);
+    if (initial.get("q")) {
+      $("q").value = initial.get("q");
+      for (const id of ["mode", "freshness", "location"]) {
+        if (initial.get(id)) $(id).value = initial.get(id);
+      }
+      if (initial.get("engine")) $("engine-select").value = initial.get("engine");
+      renderSnippet();
+      search();
+    } else {
+      renderSnippet();
+    }
+  }
+  keyInput.addEventListener("change", loadEngines);
+  start();
+})();
+</script>
+</body>
+</html>
