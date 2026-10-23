@@ -1,62 +1,81 @@
-"""Bring-your-own SearXNG instance, normalized to the SerpApi shape.
+"""Bring-your-own SearXNG instance.
 
-The instance's operator decides which upstream engines it queries, so the legal status
-of results depends entirely on that instance's settings.yml.
+The instance's operator decides which upstream engines it queries, so the legal status of
+results depends on that instance's settings.yml. Opt-in only.
 """
 
 from typing import Any
 
-from fairserp.engines.base import Compliance, Engine, EngineContext, Fragments, SearchRequest
-from fairserp.results import clean_snippet, organic_result
+from fairserp.canonical import strip_tracking
+from fairserp.engines.base import Engine, EngineContext, EngineError, require
+from fairserp.model import Answer, EngineOutput, Entity, Freshness, SearchQuery, WebResult
+from fairserp.results import clean_text, snippet
+from fairserp.rights import CommercialUse, Provenance, Rights
+
+TIME_RANGE = {Freshness.DAY: "day", Freshness.WEEK: "week", Freshness.MONTH: "month",
+              Freshness.YEAR: "year"}
 
 
 class SearxngEngine(Engine):
     name = "searxng"
-    compliance = Compliance.USER_OPERATED
     upstream = "your SearXNG instance (search.formats must include json)"
     required_settings = ("searxng_url",)
-    notes = "Status depends on the engines enabled in your instance. See README."
+    supports = frozenset({"language", "safe", "freshness"})
+    max_depth = 200
+    rights = Rights(
+        provenance=Provenance.USER_OPERATED,
+        commercial_use=CommercialUse.UNSPECIFIED,
+        max_storage_seconds=None,
+        attribution=None,
+        terms_url="https://docs.searxng.org/",
+        terms_reviewed="2026-10-23",
+        notes="Rights follow the upstream engines your instance enables.",
+    )
+    notes = "Opt-in. Status depends on the engines enabled in your instance."
 
-    async def fetch(self, request: SearchRequest, ctx: EngineContext) -> Any:
-        params: dict[str, Any] = {"q": request.q, "format": "json", "pageno": request.page}
-        if request.hl:
-            params["language"] = request.hl
-        if request.safe:
-            params["safesearch"] = 2 if request.safe == "active" else 0
+    def applied(self, query: SearchQuery) -> set[str]:
+        applied = query.requested_params() & self.supports
+        if query.freshness == Freshness.HOUR:
+            applied.discard("freshness")
+        return applied
+
+    async def fetch(self, query: SearchQuery, ctx: EngineContext) -> Any:
+        params: dict[str, Any] = {"q": query.q, "format": "json",
+                                  "pageno": query.offset // query.num + 1}
+        if query.language:
+            params["language"] = query.language
+        params["safesearch"] = 2 if query.safe else 0
+        if query.freshness in TIME_RANGE:
+            params["time_range"] = TIME_RANGE[query.freshness]
         url = f"{ctx.settings.searxng_url.rstrip('/')}/search"
         return await self.get_json(ctx, "GET", url, params=params)
 
-    def parse(self, raw: dict[str, Any], request: SearchRequest) -> Fragments:
-        results = raw.get("results") or []
-        fragments: Fragments = {
-            "organic_results": [
-                organic_result(i, item.get("title", ""), item.get("url", ""),
-                               item.get("content"), request.q,
-                               date=item.get("publishedDate"),
-                               thumbnail=item.get("thumbnail"))
-                for i, item in enumerate(results[: request.num], start=1)
-            ]
-        }
+    def parse(self, raw: dict[str, Any], query: SearchQuery) -> EngineOutput:
+        require(isinstance(raw.get("results"), list), "missing results list")
+        unresponsive = raw.get("unresponsive_engines") or []
+        if not raw["results"] and unresponsive:
+            names = ", ".join(str(e[0] if isinstance(e, list) else e) for e in unresponsive)
+            raise EngineError(self.name, f"instance engines unresponsive: {names}")
+        web = [WebResult(url=strip_tracking(it["url"]), title=clean_text(it.get("title")),
+                         snippet=snippet(it.get("content"), query.q),
+                         published_at=it.get("publishedDate"), thumbnail=it.get("thumbnail"))
+               for it in raw["results"][: query.num]]
+        entity = None
         boxes = raw.get("infoboxes") or []
         if boxes:
             box = boxes[0]
-            graph = {
-                "title": box.get("infobox", ""),
-                "description": clean_snippet(box.get("content")),
-            }
-            if box.get("img_src"):
-                graph["header_images"] = [{"image": box["img_src"], "source": box.get("id", "")}]
-            for attribute in box.get("attributes") or []:
-                key = "_".join(str(attribute.get("label", "")).lower().split())
-                if key and attribute.get("value"):
-                    graph.setdefault(key, attribute["value"])
-            fragments["knowledge_graph"] = graph
+            entity = Entity(
+                title=box.get("infobox", ""), description=clean_text(box.get("content")),
+                url=box.get("id", ""), image=box.get("img_src"),
+                attributes={"_".join(str(a.get("label", "")).lower().split()): str(a["value"])
+                            for a in box.get("attributes") or [] if a.get("value")},
+            )
+        answer = None
         if raw.get("answers"):
-            answer = raw["answers"][0]
-            text = answer.get("answer") if isinstance(answer, dict) else answer
-            fragments["answer_box"] = {"type": "organic_result", "snippet": clean_snippet(text)}
-        if raw.get("suggestions"):
-            fragments["related_searches"] = [{"query": s} for s in raw["suggestions"]]
-        if raw.get("number_of_results"):
-            fragments["search_information"] = {"total_results": int(raw["number_of_results"])}
-        return fragments
+            first = raw["answers"][0]
+            text = first.get("answer") if isinstance(first, dict) else first
+            answer = Answer(text=clean_text(text), generated=False)
+        return EngineOutput(web=web, entity=entity, answer=answer,
+                            related=list(raw.get("suggestions") or []),
+                            total_results=raw.get("number_of_results") or None,
+                            has_more=len(raw["results"]) >= query.num)

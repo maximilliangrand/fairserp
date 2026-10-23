@@ -1,84 +1,72 @@
-"""Wikipedia search and page summaries (official MediaWiki APIs, keyless).
+"""Wikipedia full-text search (MediaWiki Action API, keyless).
 
-Wikimedia asks API clients to send a descriptive User-Agent, set FAIRSERP_USER_AGENT
-with a contact address for production use.
+Wikimedia asks API clients to send a descriptive User-Agent with contact details; set
+FAIRSERP_USER_AGENT for production use.
 """
 
 import re
 from typing import Any
 from urllib.parse import quote
 
-from fairserp.engines.base import Compliance, Engine, EngineContext, Fragments, Role, SearchRequest
-from fairserp.results import organic_result
+from fairserp.engines.base import Engine, EngineContext, require
+from fairserp.model import EngineOutput, SearchQuery, WebResult
+from fairserp.results import clean_text, snippet
+from fairserp.rights import CommercialUse, Provenance, Rights
 
-# The language code becomes part of the upstream hostname, so it must be strictly a code.
+# The language code becomes part of the upstream hostname, so it must strictly be a code.
 LANG = re.compile(r"[a-z]{2,3}")
+
+WIKIPEDIA_RIGHTS = Rights(
+    provenance=Provenance.OPEN_DATA,
+    commercial_use=CommercialUse.ALLOWED,
+    max_storage_seconds=None,
+    attribution="Text from Wikipedia, CC BY-SA 4.0",
+    terms_url="https://foundation.wikimedia.org/wiki/Policy:Terms_of_Use",
+    terms_reviewed="2026-10-23",
+    notes="Share-alike applies to reused text. API etiquette requires an identifying UA.",
+)
+
+
+def wiki_lang(query: SearchQuery, default: str) -> str:
+    lang = (query.language or default).lower()
+    return lang if LANG.fullmatch(lang) else default
 
 
 class WikipediaEngine(Engine):
     name = "wikipedia"
-    role = Role.ENRICHMENT
-    compliance = Compliance.OPEN_DATA_API
     upstream = "https://{lang}.wikipedia.org/w/api.php"
-    notes = "No key. Wikipedia articles as organic results plus an entity knowledge graph."
+    supports = frozenset({"language"})
+    max_depth = 500
+    fixture_verified = True
+    rights = WIKIPEDIA_RIGHTS
+    notes = "No key. Wikipedia articles only; useful directly, not as a general web engine."
 
-    async def fetch(self, request: SearchRequest, ctx: EngineContext) -> Any:
-        lang = (request.hl or ctx.settings.wikipedia_lang).split("-")[0].lower()
-        if not LANG.fullmatch(lang):
-            lang = ctx.settings.wikipedia_lang
-        base = f"https://{lang}.wikipedia.org"
+    async def fetch(self, query: SearchQuery, ctx: EngineContext) -> Any:
+        base = f"https://{wiki_lang(query, ctx.settings.wikipedia_lang)}.wikipedia.org"
         params = {
-            "action": "query", "list": "search", "srsearch": request.q, "format": "json",
-            "srlimit": request.num, "sroffset": request.start, "srprop": "snippet|timestamp",
+            "action": "query", "list": "search", "srsearch": query.q, "format": "json",
+            "srlimit": query.num, "sroffset": query.offset, "srprop": "snippet|timestamp",
         }
-        search = await self.get_json(ctx, "GET", f"{base}/w/api.php", params=params)
-        hits = search.get("query", {}).get("search", [])
-        summary = None
-        if hits and _same_entity(hits[0]["title"], request.q):
-            title = quote(hits[0]["title"].replace(" ", "_"), safe="")
-            summary = await self.get_json(ctx, "GET", f"{base}/api/rest_v1/page/summary/{title}")
-        return {"base": base, "search": search, "summary": summary}
+        return {"base": base,
+                "search": await self.get_json(ctx, "GET", f"{base}/w/api.php", params=params)}
 
-    def parse(self, raw: dict[str, Any], request: SearchRequest) -> Fragments:
-        base = raw["base"]
-        query = raw["search"].get("query", {})
-        results = [
-            organic_result(
-                index,
-                hit["title"],
-                f"{base}/wiki/{quote(hit['title'].replace(' ', '_'), safe='')}",
-                hit.get("snippet"),
-                request.q,
-                source="Wikipedia",
-                date=(hit.get("timestamp") or "")[:10],
+    def parse(self, raw: dict[str, Any], query: SearchQuery) -> EngineOutput:
+        result = raw["search"].get("query")
+        require(isinstance(result, dict), "missing query object")
+        hits = result.get("search")
+        require(isinstance(hits, list), "missing search list")
+        web = [
+            WebResult(
+                url=f"{raw['base']}/wiki/{quote(hit['title'].replace(' ', '_'), safe='')}",
+                title=hit["title"],
+                snippet=snippet(clean_text(hit.get("snippet")), query.q),
+                # The search API reports the last edit, which is an update, not publication.
+                updated_at=(hit.get("timestamp") or "")[:10] or None,
+                source_name="Wikipedia",
             )
-            for index, hit in enumerate(query.get("search", []), start=1)
+            for hit in hits
         ]
-        fragments: Fragments = {"organic_results": results}
-        total = query.get("searchinfo", {}).get("totalhits")
-        if total is not None:
-            fragments["search_information"] = {"total_results": total}
-        summary = raw.get("summary")
-        if summary and summary.get("type") == "standard":
-            fragments["knowledge_graph"] = _knowledge_graph(summary)
-        return fragments
-
-
-def _same_entity(title: str, query: str) -> bool:
-    return title.casefold().strip() == query.casefold().strip()
-
-
-def _knowledge_graph(summary: dict[str, Any]) -> dict[str, Any]:
-    page = summary.get("content_urls", {}).get("desktop", {}).get("page", "")
-    graph: dict[str, Any] = {
-        "title": summary.get("title", ""),
-        "type": (summary.get("description") or "").split(" (")[0].capitalize(),
-        "description": summary.get("extract", ""),
-        "source": {"name": "Wikipedia", "link": page},
-    }
-    if summary.get("wikibase_item"):
-        graph["wikidata_id"] = summary["wikibase_item"]
-    image = (summary.get("thumbnail") or {}).get("source")
-    if image:
-        graph["header_images"] = [{"image": image, "source": page}]
-    return {k: v for k, v in graph.items() if v}
+        total = (result.get("searchinfo") or {}).get("totalhits")
+        return EngineOutput(web=web, total_results=total,
+                            has_more=bool(total) and query.offset + query.num < min(total,
+                                                                                     self.max_depth))
