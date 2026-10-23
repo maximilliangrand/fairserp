@@ -1,31 +1,47 @@
 # One-command deploy:
 #   FAIRSERP_API_KEYS=your-secret-key docker compose up -d
-# or put the variables in a .env file next to this one (see .env.example).
+# The default "strict" profile only runs providers with disclosed provenance. With no
+# provider keys, opt in to one explicitly, e.g. FAIRSERP_OPT_IN=firecrawl (see README).
 services:
   fairserp:
     build: .
-    image: fairserp:local
+    image: ${FAIRSERP_IMAGE:-fairserp:local}
     restart: unless-stopped
     ports:
-      - "${FAIRSERP_PORT:-8000}:8000"
+      # Localhost only by default; put a TLS reverse proxy in front for remote access.
+      - "${FAIRSERP_BIND:-127.0.0.1}:${FAIRSERP_PORT:-8000}:8000"
     env_file:
       - path: .env
         required: false
     environment:
       FAIRSERP_API_KEYS: ${FAIRSERP_API_KEYS:?set FAIRSERP_API_KEYS (comma separated keys)}
-      FAIRSERP_BACKEND: redis://redis:6379/0
-      FAIRSERP_PUBLIC_URL: ${FAIRSERP_PUBLIC_URL:-http://localhost:8000}
+      FAIRSERP_CACHE_BACKEND: redis://redis-cache:6379/0
+      FAIRSERP_STATE_BACKEND: redis://redis-state:6379/0
     depends_on:
-      redis:
+      redis-cache:
+        condition: service_healthy
+      redis-state:
         condition: service_healthy
 
-  redis:
+  # Disposable: fragments, archive, async jobs. Evicts least recently used keys when full.
+  redis-cache:
     image: redis:7-alpine
     restart: unless-stopped
-    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "256mb",
-              "--maxmemory-policy", "volatile-lru"]
+    command: ["redis-server", "--save", "", "--appendonly", "no",
+              "--maxmemory", "256mb", "--maxmemory-policy", "allkeys-lru"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # Accounting: quotas, upstream budgets, circuit breakers, host limiters. Never evicts.
+  redis-state:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory-policy", "noeviction"]
     volumes:
-      - redis-data:/data
+      - redis-state:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -33,4 +49,4 @@ services:
       retries: 10
 
 volumes:
-  redis-data:
+  redis-state:
