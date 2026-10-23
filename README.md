@@ -22,7 +22,7 @@ FAIRSERP_OPT_IN=firecrawl uvx --from git+https://github.com/maximilliangrand/fai
 # Docker: the app plus a cache Redis and a non-evicting state Redis
 FAIRSERP_API_KEYS=my-secret FAIRSERP_OPT_IN=firecrawl docker compose up -d
 # or a released image (private while the repository is private)
-docker run -p 127.0.0.1:8000:8000 -e FAIRSERP_API_KEYS=my-secret ghcr.io/maximilliangrand/fairserp:0.2
+docker run -p 127.0.0.1:8000:8000 -e FAIRSERP_API_KEYS=my-secret ghcr.io/maximilliangrand/fairserp:0.2.0-rc.1
 curl -H "Authorization: Bearer my-secret" "http://localhost:8000/v1/search?q=rust+async+runtime"
 ```
 
