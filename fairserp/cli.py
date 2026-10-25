@@ -17,10 +17,10 @@ def check_config() -> None:
     """Fail fast with one line per bad setting, named as the env var to fix."""
     from pydantic import ValidationError
 
-    from fairserp.config import get_settings
+    from fairserp.config import Settings
 
     try:
-        get_settings()
+        Settings()  # not get_settings(): serve() may still adjust the env before it caches
     except ValidationError as exc:
         print("fairserp: invalid configuration:", file=sys.stderr)
         for error in exc.errors():

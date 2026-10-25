@@ -37,3 +37,18 @@ def test_bad_config_exits_naming_the_variable(monkeypatch, capsys, served):
         cli.main([])
     assert exc.value.code == 2 and not served
     assert "FAIRSERP_SERPAPI_ENGINES" in capsys.readouterr().err
+
+
+def test_loopback_without_keys_really_turns_auth_off(monkeypatch):
+    import uvicorn
+
+    from fairserp.config import get_settings
+
+    monkeypatch.setattr(uvicorn, "run", lambda *a, **k: None)
+    for name in ("FAIRSERP_API_KEYS", "FAIRSERP_AUTH_DISABLED", "PORT"):
+        monkeypatch.setenv(name, "")  # recorded, so serve()'s own env change is undone too
+        monkeypatch.delenv(name)
+    get_settings.cache_clear()
+    cli.main([])
+    assert get_settings().auth_disabled
+    get_settings.cache_clear()
