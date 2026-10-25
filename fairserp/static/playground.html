@@ -613,6 +613,7 @@ footer { border-top: 1px solid var(--color-rule); padding: var(--space-md) var(-
   }
 
   let snippetKind = "curl";
+  let serverOptIn = [];
   const shellQuote = (value) => `'${value.replaceAll("'", "'\\''")}'`;
   function renderSnippet() {
     const base = location.origin;
@@ -630,7 +631,10 @@ footer { border-top: 1px solid var(--color-rule); padding: var(--space-md) var(-
         `outcome = client.search(${[JSON.stringify(p.get("q"))].concat(kwargs).join(", ")})\n` +
         (local ? `for place in outcome.places:\n    print(place.name, place.distance_m, place.address)`
                : `for result in outcome.results:\n    print(result.rank, result.url, [s.engine for s in result.sources])`),
-      mcp: `{\n  "mcpServers": {\n    "fairserp": {\n      "command": "uvx",\n      "args": ["--from", "git+https://github.com/maximilliangrand/fairserp", "fairserp", "mcp"]\n    }\n  }\n}`,
+      mcp: JSON.stringify({ mcpServers: { fairserp: {
+        command: "uvx", args: ["--from", "git+https://github.com/maximilliangrand/fairserp", "fairserp", "mcp"],
+        ...(serverOptIn.length ? { env: { FAIRSERP_OPT_IN: serverOptIn.join(",") } } : {}),
+      } } }, null, 2),
     };
     $("snippet").textContent = snippets[snippetKind];
   }
@@ -918,9 +922,9 @@ footer { border-top: 1px solid var(--color-rule); padding: var(--space-md) var(-
       if (setting) dd.append(" Needs ", el("code", {}, setting), ".");
       keys.append(el("dt", {}, name), dd);
     };
-    entry("Tavily", "1,000 searches a month, no card. Sources undisclosed.", "FAIRSERP_OPT_IN=tavily");
-    entry("Exa", "$10 of credit a month, no card. Sources undisclosed.", "FAIRSERP_OPT_IN=exa");
-    entry("Marginalia", "Free key by email, independent index, noncommercial use only.", "FAIRSERP_NONCOMMERCIAL_DEPLOYMENT=true");
+    entry("Tavily", "1,000 searches a month, no card. Sources undisclosed.", "FAIRSERP_TAVILY_API_KEY=... FAIRSERP_OPT_IN=tavily");
+    entry("Exa", "$10 of credit a month, no card. Sources undisclosed.", "FAIRSERP_EXA_API_KEY=... FAIRSERP_OPT_IN=exa");
+    entry("Marginalia", "Free key by email, independent index, noncommercial use only.", "FAIRSERP_MARGINALIA_API_KEY=... FAIRSERP_NONCOMMERCIAL_DEPLOYMENT=true");
     entry("Brave, Mojeek", "Their own indexes, ready for the strict profile, but both need a card on file.");
     keyed.append(keys);
     panel.append(keyed);
@@ -1119,6 +1123,8 @@ footer { border-top: 1px solid var(--color-rule); padding: var(--space-md) var(-
       const response = await fetch("/v1/engines", { headers: headers() });
       if (!response.ok) return;
       const data = await response.json();
+      serverOptIn = data.opt_in || [];
+      renderSnippet();
       const select = $("engine-select");
       select.replaceChildren(el("option", { value: "auto" }, "Auto"));
       for (const engine of data.engines) {

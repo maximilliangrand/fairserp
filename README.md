@@ -21,10 +21,18 @@ FAIRSERP_OPT_IN=firecrawl uvx --from git+https://github.com/maximilliangrand/fai
 
 # Docker: the app plus a cache Redis and a non-evicting state Redis
 FAIRSERP_API_KEYS=my-secret FAIRSERP_OPT_IN=firecrawl docker compose up -d
-# or a released image (private while the repository is private)
-docker run -p 127.0.0.1:8000:8000 -e FAIRSERP_API_KEYS=my-secret ghcr.io/maximilliangrand/fairserp:0.2.0-rc.1
+# or a released image
+docker run -p 127.0.0.1:8000:8000 -e FAIRSERP_API_KEYS=my-secret -e FAIRSERP_OPT_IN=firecrawl \
+  ghcr.io/maximilliangrand/fairserp:0.2.0
 curl -H "Authorization: Bearer my-secret" "http://localhost:8000/v1/search?q=rust+async+runtime"
 ```
+
+Then open http://localhost:8000/ for the playground. `fairserp --port 9000` (or `--host`)
+changes where it listens; it also reads `HOST` and `PORT`. Listening on anything other than
+loopback requires `FAIRSERP_API_KEYS`, and the server says so at startup if it is missing.
+
+With no keys and no opt-in, local search (`vertical=local&location=...`) and
+`engine=wikipedia` still work; general web search needs a provider from the table below.
 
 **Why `FAIRSERP_OPT_IN`:** the default `strict` profile only runs providers that disclose where
 their results come from: their own index (Brave, Mojeek) or open data (Wikipedia, Wikidata,
@@ -43,8 +51,9 @@ fairserp refuses to guess and tells you how to proceed:
 
 `GET /` serves a playground: run a query, see each result's provider, rank and provenance,
 the provider status strip, applied and ignored params, retention and attribution, and copy
-the same search as curl, Python or an MCP config. It makes no third-party requests and runs
-under a hash-pinned Content-Security-Policy.
+the same search as curl, Python or an MCP config. Its scripts, styles and map are served by
+fairserp itself under a hash-pinned Content-Security-Policy; the only third-party requests
+are knowledge-graph images, loaded from the source that supplied them (usually Wikimedia).
 
 ![fairserp playground](docs/img/playground.png)
 
@@ -95,8 +104,14 @@ own rank. In the [2026-10-23 benchmark](bench/README.md), fusing Firecrawl with 
 ## MCP server and fetch
 
 ```bash
-claude mcp add fairserp -- uvx --from git+https://github.com/maximilliangrand/fairserp fairserp mcp
+claude mcp add fairserp -e FAIRSERP_OPT_IN=firecrawl \
+  -- uvx --from git+https://github.com/maximilliangrand/fairserp fairserp mcp
 ```
+
+The MCP server runs searches itself; it does not talk to a fairserp HTTP server, so it needs
+its own provider settings in its environment (`-e` above, or an `env` block in a JSON MCP
+config). Without one, `web_search` answers `refused` with a `fix` explaining what to set;
+`local_search` and `fetch` work with no settings.
 
 The tools are `web_search`, `local_search` and `fetch`. They return compact cited evidence:
 numbered results with the provider, rank and provenance of each, degraded providers, ignored
@@ -122,9 +137,10 @@ parser fixtures were recorded from the real API. In summary:
 | wikipedia, wikidata | open data | strict | Keyless. Wikidata gives the knowledge graph with fuzzy matching ("einstein" works) |
 | duckduckgo_ia | aggregator | strict | Keyless instant answers; each abstract names its source |
 | openstreetmap | open data | strict | Keyless local results via Nominatim: OSM categories, distance-sorted. Public instance 1 req/s |
-| marginalia | own index | needs noncommercial declaration | Free keys are CC-BY-NC-SA |
+| marginalia | own index | needs noncommercial declaration | Free keys are CC-BY-NC-SA. Without `FAIRSERP_MARGINALIA_API_KEY` it uses the shared `public` key, which is often exhausted |
 | firecrawl | undisclosed | opt-in | Keyless tier. Results carry Google's `srsltid` |
 | tavily | undisclosed | opt-in | Free key. Its answer is model-generated and labeled as such |
+| exa, parallel, jina | undisclosed | opt-in | Keyed (`FAIRSERP_EXA_API_KEY` etc.) plus `FAIRSERP_OPT_IN=exa` |
 | searxng | user-operated | opt-in | Rights follow your instance's engines |
 
 `GET /v1/engines` shows the same data live, including why an engine is disabled.
@@ -159,7 +175,7 @@ parser fixtures were recorded from the real API. In summary:
 
 | | |
 |---|---|
-| Python | `from fairserp.client import Fairserp, AsyncFairserp` (explicit `base_url`, typed `SearchOutcome`) |
+| Python | `from fairserp.client import Fairserp, AsyncFairserp` (explicit `base_url`, typed `SearchOutcome`; `api_key` is optional when the server has auth off) |
 | TypeScript / Node | `clients/typescript` (`fairserp-client`, explicit `baseUrl`, typings included) |
 | LangChain | `fairserp.integrations.langchain.FairserpSearchTool` or `FairserpAPIWrapper` (`pip install fairserp[langchain]`) |
 | SerpApi clients | See [docs/MIGRATION.md](docs/MIGRATION.md). Do not patch LangChain's `SerpAPIWrapper`: its async path leaks your key and queries to serpapi.com |

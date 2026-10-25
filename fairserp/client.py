@@ -25,6 +25,11 @@ class FairserpError(Exception):
         self.body = body
 
 
+def _auth(api_key: str | None) -> dict[str, str]:
+    """No key is fine against a server with auth off (the default on 127.0.0.1)."""
+    return {"Authorization": f"Bearer {api_key}"} if api_key else {}
+
+
 def _check_base_url(base_url: str) -> str:
     if not base_url or not base_url.startswith(("http://", "https://")):
         raise ValueError("base_url is required, e.g. 'http://localhost:8000'")
@@ -41,10 +46,10 @@ def _raise_for(response: httpx.Response) -> None:
 
 
 class Fairserp:
-    def __init__(self, base_url: str, api_key: str, timeout: float = 30.0,
+    def __init__(self, base_url: str, api_key: str | None = None, timeout: float = 30.0,
                  transport: httpx.BaseTransport | None = None) -> None:
         self._http = httpx.Client(base_url=_check_base_url(base_url), timeout=timeout,
-                                  headers={"Authorization": f"Bearer {api_key}"},
+                                  headers=_auth(api_key),
                                   transport=transport, trust_env=False)
 
     def search(self, q: str, **params: Any) -> SearchOutcome:
@@ -74,10 +79,10 @@ class Fairserp:
 
 
 class AsyncFairserp:
-    def __init__(self, base_url: str, api_key: str, timeout: float = 30.0,
+    def __init__(self, base_url: str, api_key: str | None = None, timeout: float = 30.0,
                  transport: httpx.AsyncBaseTransport | None = None) -> None:
         self._http = httpx.AsyncClient(base_url=_check_base_url(base_url), timeout=timeout,
-                                       headers={"Authorization": f"Bearer {api_key}"},
+                                       headers=_auth(api_key),
                                        transport=transport, trust_env=False)
 
     async def search(self, q: str, **params: Any) -> SearchOutcome:

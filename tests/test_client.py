@@ -58,6 +58,13 @@ async def test_async_client():
     assert_all_local(seen)
 
 
+def test_key_is_optional_for_servers_with_auth_off():
+    seen, handle = recorder()
+    with Fairserp(BASE, transport=httpx.MockTransport(handle)) as client:
+        client.search("rust")
+    assert "authorization" not in seen[0].headers
+
+
 def test_base_url_is_mandatory():
     with pytest.raises(ValueError):
         Fairserp("", "k")

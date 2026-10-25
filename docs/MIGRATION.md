@@ -20,6 +20,11 @@ OpenStreetMap local results. You can also map a name straight to one engine, e.g
 
 ## 2. Point the client at your server
 
+The SerpApi-shaped endpoint is `GET /search` (also `/search.json`), on the same host and port
+as the native API. Plain `http://` works for a local server, e.g.
+`serpapi.HTTPClient.BASE_DOMAIN = "http://127.0.0.1:8000"`. Clients still send `api_key`:
+use one of your `FAIRSERP_API_KEYS`, or any string when auth is off.
+
 | Client | Change |
 |---|---|
 | `serpapi` (Python) | `serpapi.HTTPClient.BASE_DOMAIN = "https://search.internal"` |
