@@ -264,8 +264,6 @@ PRs must respect. Security reports: [SECURITY.md](SECURITY.md). Releases and dep
 
 ## License
 
-AGPL-3.0-only (under review: both external reviews recommend Apache-2.0; the decision is the
-owner's). Calling a fairserp server's API from proprietary code creates no AGPL obligation;
-publishing a modified fairserp as a network service does. Data stays under each provider's
+Apache-2.0 for the code. Data stays under each provider's
 terms: OpenStreetMap is ODbL, Wikipedia text is CC BY-SA, Wikidata is CC0, Marginalia's free
 tier is CC-BY-NC-SA, and commercial APIs follow your agreement with each provider.

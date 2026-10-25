@@ -3,7 +3,7 @@ name = "fairserp"
 version = "0.2.0"
 description = "Self-hostable, SerpApi-compatible search API built on official and openly licensed search sources."
 readme = "README.md"
-license = "AGPL-3.0-only"
+license = "Apache-2.0"
 requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.115",
