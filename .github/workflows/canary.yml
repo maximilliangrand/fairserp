@@ -19,7 +19,7 @@ jobs:
       FAIRSERP_SERPAPI_ENGINES: google:auto,google_maps:openstreetmap
       FAIRSERP_PUBLIC_URL: http://localhost:8000
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: docker compose up (live providers)
         run: docker compose up -d --build --wait --wait-timeout 180
       - name: engine=google via the migration alias (Firecrawl opted in, Wikidata, DDG)
@@ -41,7 +41,7 @@ jobs:
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v6
       - run: uv sync --frozen
       - name: start a strict server and an opt-in server
