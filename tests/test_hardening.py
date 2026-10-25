@@ -117,8 +117,8 @@ def test_default_budgets_cap_one_key_below_the_server_total():
 def test_auth_disabled_cannot_mint_quota_with_made_up_keys():
     with client(stubs.organic("a"), api_keys="", auth_disabled=True,
                 default_hourly_limit=2) as c:
-        codes = [c.get("/search.json", params={"q": f"q{i}", "api_key": f"k{i}"}).status_code
-                 for i in range(4)]
+        codes = [c.get("/search.json", params={"q": f"q{i}", "api_key": f"k{i}"},
+                       headers={"Host": "localhost"}).status_code for i in range(4)]
     assert codes == [200, 200, 429, 429]
 
 
@@ -153,3 +153,44 @@ def test_app_wires_secret_values_into_log_filters():
     TestClient(create_app(settings(brave_api_key="BRAVE_SECRET_VALUE")))
     filters = [f for f in logging.getLogger("httpx").filters if isinstance(f, RedactSecrets)]
     assert filters and "BRAVE_SECRET_VALUE" in filters[0].secrets
+
+
+def test_mcp_server_redacts_provider_keys_in_its_logs():
+    from fairserp.mcp_server import build
+
+    build(settings(mojeek_api_key="MOJEEK_SECRET_VALUE"))
+    filters = [f for f in logging.getLogger("httpx").filters if isinstance(f, RedactSecrets)]
+    assert filters and "MOJEEK_SECRET_VALUE" in filters[0].secrets
+    assert logging.getLogger("httpx").getEffectiveLevel() >= logging.WARNING
+    for name in ("httpx", "httpcore"):
+        logging.getLogger(name).setLevel(logging.NOTSET)
+
+
+def test_oversized_bodies_are_refused_before_auth():
+    with client(stubs.organic("a")) as c:
+        big = c.post("/v1/search", content=b"x" * 70_000,
+                     headers={"Content-Type": "application/json"})
+        ok = c.post("/v1/search", json={"q": "coffee"}, headers=AUTH)
+    assert big.status_code == 413 and ok.status_code == 200
+    assert ok.headers["x-content-type-options"] == "nosniff"
+
+
+def test_auth_off_answers_only_loopback_hosts():
+    with client(stubs.organic("a"), api_keys="", auth_disabled=True) as c:
+        rebound = c.get("/v1/search", params={"q": "x"}, headers={"Host": "rebind.example"})
+        local = c.get("/v1/search", params={"q": "x"}, headers={"Host": "127.0.0.1:8000"})
+    assert rebound.status_code == 421 and local.status_code == 200
+
+
+def test_unreachable_state_store_is_a_503_not_a_500():
+    with client(stubs.organic("a"), state_backend="redis://127.0.0.1:1/0") as c:
+        response = c.get("/v1/search", params={"q": "x"}, headers=AUTH)
+    assert response.status_code == 503
+    assert response.json()["error"]["code"] == "store_unavailable"
+
+
+def test_startup_names_misspelled_engines(caplog):
+    with caplog.at_level(logging.WARNING, logger="fairserp"), \
+            client(stubs.organic("a"), organic_priority="a,brvae"):
+        pass
+    assert "brvae" in caplog.text

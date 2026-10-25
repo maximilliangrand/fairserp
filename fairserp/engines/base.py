@@ -103,7 +103,13 @@ class Engine(ABC):
             missing = ", ".join(f"FAIRSERP_{a.upper()}" for a in self.required_settings)
             raise EngineError(self.name, f"not configured, set {missing}",
                               ErrorKind.NOT_CONFIGURED)
-        raw = await self.fetch(query, ctx)
+        try:
+            raw = await self.fetch(query, ctx)
+        except (KeyError, TypeError, ValueError, AttributeError) as exc:
+            # fetch() steps through intermediate payloads (e.g. Wikidata's lookups), so a
+            # shape surprise there is a bad upstream payload too, not a server error.
+            raise EngineError(self.name, f"unexpected upstream payload: {exc!r}",
+                              ErrorKind.REJECTED) from exc
         try:
             return self.parse(raw, query)
         except (PayloadError, KeyError, TypeError, ValueError, AttributeError) as exc:
