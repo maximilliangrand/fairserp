@@ -247,3 +247,13 @@ async def test_research_mode_fuses_and_keeps_provider_ranks():
     top = outcome.results[0]
     assert top.url == "https://shared.example/0"
     assert {s.engine: s.rank for s in top.sources} == {"a": 1, "b": 3}
+
+
+async def test_a_provider_bug_fails_that_provider_not_the_search():
+    shape = stubs.Stub("wikidata", Role.ENRICHMENT, error=KeyError("entities"))
+    crash = stubs.Stub("duckduckgo_ia", Role.ENRICHMENT, error=RuntimeError("boom"))
+    outcome = await run(searcher(stubs.organic("a"), shape, crash), SearchQuery(q="coffee"))
+    reports = {r.engine: r for r in outcome.providers}
+    assert outcome.status == "partial" and len(outcome.results) == 10
+    assert reports["wikidata"].status == "failed" and "payload" in reports["wikidata"].error
+    assert reports["duckduckgo_ia"].error == "internal error: RuntimeError"

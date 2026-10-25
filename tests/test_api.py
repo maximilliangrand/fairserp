@@ -279,14 +279,17 @@ def test_interrupted_async_job_reads_as_failed():
     assert "interrupted" in response["error"]
 
 
-def test_zero_trace_is_not_archived_and_cannot_be_async():
-    with client(stubs.organic("a")) as c:
+def test_zero_trace_is_not_archived_cached_or_async():
+    engine = stubs.organic("a")
+    with client(engine) as c:
         data = c.get("/search.json", params={"q": "x", "zero_trace": "true"},
                      headers=AUTH).json()
+        c.get("/search.json", params={"q": "x"}, headers=AUTH)
         archived = c.get(f"/searches/{data['search_metadata']['id']}.json", headers=AUTH)
         both = c.get("/search.json", params={"q": "x", "zero_trace": "true", "async": "true"},
                      headers=AUTH)
     assert archived.status_code == 404 and both.status_code == 400
+    assert len(engine.calls) == 2
 
 
 # ------------------------------------------------------------------ security

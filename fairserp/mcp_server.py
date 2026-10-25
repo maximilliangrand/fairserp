@@ -1,20 +1,21 @@
 """MCP server: web search, local search and a guarded fetch tool, as compact cited evidence.
 
     fairserp mcp                      # stdio, for Claude Desktop / Claude Code / Cursor
-    claude mcp add fairserp -- uvx --from git+https://github.com/maximilliangrand/fairserp \
-        fairserp mcp
+    claude mcp add fairserp -e FAIRSERP_OPT_IN=firecrawl \
+        -- uvx --from git+https://github.com/maximilliangrand/fairserp fairserp mcp
 
 It runs the same planner and policy as the HTTP API, in-process: the strict profile, opt-ins,
 budgets and retention rules all apply. Configure it with the usual FAIRSERP_* variables.
 """
 
+import logging
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from typing import Any
 
 from mcp.server.mcpserver import MCPServer
 
-from fairserp import __version__
+from fairserp import __version__, logs
 from fairserp.config import Settings, get_settings
 from fairserp.core import PlanError, Searcher
 from fairserp.engines import build_registry
@@ -73,6 +74,11 @@ def compact(outcome: SearchOutcome) -> dict[str, Any]:
 
 def build(settings: Settings | None = None, runtime: Runtime | None = None) -> MCPServer:
     settings = settings or get_settings()
+    # MCP clients keep server stderr in log files, so redact like the HTTP server does, and
+    # keep per-request HTTP client lines (which carry queries) out of it entirely.
+    logs.install(hide_queries=not settings.log_queries, secrets=settings.secret_values())
+    for name in ("httpx", "httpcore"):
+        logging.getLogger(name).setLevel(logging.WARNING)
     state: dict[str, Runtime] = {}
 
     @asynccontextmanager
@@ -81,14 +87,16 @@ def build(settings: Settings | None = None, runtime: Runtime | None = None) -> M
             state["rt"] = runtime
             yield
             return
-        cache = create_store(settings.cache_backend, settings.cache_max_entries)
-        accounting = create_store(settings.state_backend)
+        cache = create_store(settings.cache_backend, settings.cache_max_entries, fail_open=True)
+        accounting = create_store(settings.state_backend, fail_open=False)
         http = HttpPool(settings)
         state["rt"] = Runtime(Searcher(settings, build_registry(), http, cache, accounting),
                               Fetcher(settings, cache), http)
         yield
         await state["rt"].fetcher.close()
         await http.close()
+        await cache.close()
+        await accounting.close()
 
     server = MCPServer(
         name="fairserp", version=__version__, lifespan=lifespan,

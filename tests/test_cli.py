@@ -26,3 +26,14 @@ def test_exposed_listener_without_keys_warns(monkeypatch, capsys):
         monkeypatch.delenv(name, raising=False)
     cli.main(["serve", "--host", "0.0.0.0"])
     assert "every request will get 401" in capsys.readouterr().err
+
+
+def test_bad_config_exits_naming_the_variable(monkeypatch, capsys, served):
+    from fairserp.config import get_settings
+
+    monkeypatch.setenv("FAIRSERP_SERPAPI_ENGINES", "google")
+    get_settings.cache_clear()
+    with pytest.raises(SystemExit) as exc:
+        cli.main([])
+    assert exc.value.code == 2 and not served
+    assert "FAIRSERP_SERPAPI_ENGINES" in capsys.readouterr().err

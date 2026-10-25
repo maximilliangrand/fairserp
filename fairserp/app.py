@@ -6,6 +6,7 @@ import secrets
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
 from typing import Annotated, Any
+from urllib.parse import urlsplit
 
 from fastapi import Depends, FastAPI, Query, Request
 from fastapi.exceptions import RequestValidationError
@@ -18,10 +19,11 @@ from fairserp.config import KeyLimits, Settings, get_settings
 from fairserp.core import PlanError, Searcher
 from fairserp.engines import Engine, EngineError, Role, build_registry
 from fairserp.fetch import Fetcher, FetchError
+from fairserp.guards import BodyLimit, LoopbackHostOnly, SecurityHeaders
 from fairserp.http import HttpPool
 from fairserp.limits import QuotaExceeded, Quotas, owner_id
 from fairserp.model import OutcomeStatus, SearchOutcome, SearchQuery
-from fairserp.store import Store, create_store
+from fairserp.store import Store, StoreUnavailable, create_store
 
 logger = logging.getLogger("fairserp")
 
@@ -59,8 +61,9 @@ def create_app(settings: Settings | None = None,
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         cache = create_store(settings.cache_backend, settings.cache_max_entries,
-                             settings.redis_max_connections)
-        state = create_store(settings.state_backend, None, settings.redis_max_connections)
+                             settings.redis_max_connections, fail_open=True)
+        state = create_store(settings.state_backend, None, settings.redis_max_connections,
+                             fail_open=False)
         http = HttpPool(settings)
         engines = registry if registry is not None else build_registry()
         app.state.services = Services(
@@ -72,6 +75,11 @@ def create_app(settings: Settings | None = None,
         if not settings.public_url:
             logger.warning("FAIRSERP_PUBLIC_URL is unset; self links use each request's host")
         searcher = app.state.services.searcher
+        unknown = settings.unknown_engine_names(set(engines))
+        if unknown:
+            logger.warning("unknown engine names in FAIRSERP_ORGANIC_PRIORITY, ENRICHERS or "
+                           "OPT_IN, ignored: %s. Known: %s", ", ".join(unknown),
+                           ", ".join(sorted(engines)))
         auto = [engines[n] for n in settings.priority() if n in engines]
         if not any(e.role == Role.ORGANIC and searcher.block_reason(e) is None for e in auto):
             logger.warning("no web search provider is enabled, so only open-data engines and "
@@ -88,6 +96,7 @@ def create_app(settings: Settings | None = None,
 
     app = FastAPI(
         title="fairserp", version=__version__, lifespan=lifespan,
+        docs_url=None, redoc_url=None,
         description="Self-hosted search infrastructure for AI agents, with provenance on "
                     "every result. The /v1 API is native; /search speaks SerpApi's format.",
     )
@@ -113,12 +122,25 @@ def create_app(settings: Settings | None = None,
         return await api_error(request, ApiError(400, f"Invalid parameter: {fields}",
                                                  "invalid_parameter"))
 
+    @app.exception_handler(StoreUnavailable)
+    async def store_down(request: Request, exc: StoreUnavailable) -> JSONResponse:
+        logger.error("state store unavailable on %s: %s", request.url.path, exc)
+        return await api_error(request, ApiError(
+            503, "The quota and archive store is unreachable; try again shortly.",
+            "store_unavailable", retry_after=5))
+
     @app.exception_handler(Exception)
     async def unexpected(request: Request, exc: Exception) -> JSONResponse:
         logger.exception("unhandled error on %s", request.url.path)
         return await api_error(request, ApiError(500, "Internal server error.", "internal"))
 
     _register(app)
+    if settings.auth_disabled:
+        public_host = urlsplit(settings.public_url).hostname if settings.public_url else None
+        app.add_middleware(LoopbackHostOnly,
+                           extra_hosts=frozenset({public_host} if public_host else ()))
+    app.add_middleware(SecurityHeaders)
+    app.add_middleware(BodyLimit)
     return app
 
 
@@ -198,7 +220,8 @@ async def execute(services: Services, query: SearchQuery, requested_engine: str,
 
     try:
         outcome = await services.searcher.run(query, plan, search_id, api_key,
-                                              requested_engine, use_cache=not no_cache)
+                                              requested_engine, use_cache=not no_cache,
+                                              keep=not zero_trace)
     except Exception:
         await services.quotas.release(reservation)
         raise
@@ -479,6 +502,12 @@ def _register(app: FastAPI) -> None:
         html, csp = playground.page()
         return HTMLResponse(html, headers={"Content-Security-Policy": csp,
                                            "X-Content-Type-Options": "nosniff",
+                                           "Referrer-Policy": "no-referrer"})
+
+    @app.get("/docs", include_in_schema=False)
+    async def api_docs() -> HTMLResponse:
+        html, csp = playground.api_docs()
+        return HTMLResponse(html, headers={"Content-Security-Policy": csp,
                                            "Referrer-Policy": "no-referrer"})
 
     @app.get("/healthz", tags=["ops"])

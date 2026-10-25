@@ -13,6 +13,22 @@ def _loopback(host: str) -> bool:
         return host == "localhost"
 
 
+def check_config() -> None:
+    """Fail fast with one line per bad setting, named as the env var to fix."""
+    from pydantic import ValidationError
+
+    from fairserp.config import get_settings
+
+    try:
+        get_settings()
+    except ValidationError as exc:
+        print("fairserp: invalid configuration:", file=sys.stderr)
+        for error in exc.errors():
+            name = "FAIRSERP_" + "_".join(str(p) for p in error["loc"]).upper()
+            print(f"  {name}: {error['msg']}", file=sys.stderr)
+        sys.exit(2)
+
+
 def serve(args: argparse.Namespace) -> None:
     import uvicorn
 
@@ -42,6 +58,7 @@ def main(argv: list[str] | None = None) -> None:
     if not argv or argv[0] not in ("serve", "mcp", "-h", "--help"):
         argv = ["serve", *argv]
     args = parser.parse_args(argv)
+    check_config()
     if args.command == "mcp":
         from fairserp.mcp_server import main as mcp_main
 

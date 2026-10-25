@@ -9,6 +9,7 @@ ignored, what failed, and how long any copy may be kept.
 import asyncio
 import hashlib
 import json
+import logging
 import time
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
@@ -33,6 +34,8 @@ from fairserp.model import (
 )
 from fairserp.rights import Rights, policy_block
 from fairserp.store import Store
+
+logger = logging.getLogger("fairserp")
 
 LOCAL_ENGINE = "openstreetmap"
 ENRICHMENT_GRACE_SECONDS = 0.3
@@ -64,6 +67,7 @@ class RunState:
     api_key: str
     deadline: float
     use_cache: bool = True
+    keep: bool = True  # False for zero_trace: nothing from this search is written anywhere
 
 
 @dataclass
@@ -184,16 +188,23 @@ class Searcher:
     # ------------------------------------------------------------------ execution
 
     async def run(self, query: SearchQuery, plan: Plan, search_id: str, api_key: str,
-                  requested_engine: str, use_cache: bool = True) -> SearchOutcome:
+                  requested_engine: str, use_cache: bool = True,
+                  keep: bool = True) -> SearchOutcome:
         started = time.monotonic()
-        state = RunState(api_key, started + self.settings.request_deadline_seconds, use_cache)
+        state = RunState(api_key, started + self.settings.request_deadline_seconds, use_cache,
+                         keep)
         side = [*plan.enrichers, *([plan.local] if plan.local and plan.organic else [])]
         side_tasks = {e.name: asyncio.create_task(self._call(e, query, state)) for e in side}
 
-        if plan.organic:
-            primary = await self._organic(query, plan, state)
-        else:
-            primary = [await self._call(plan.local, query, state)]
+        try:
+            if plan.organic:
+                primary = await self._organic(query, plan, state)
+            else:
+                primary = [await self._call(plan.local, query, state)]
+        except BaseException:
+            for task in side_tasks.values():
+                task.cancel()
+            raise
 
         enrichment = await self._collect(side_tasks, started, state.deadline)
         outcome = self._assemble(query, plan, primary, enrichment, search_id,
@@ -266,7 +277,7 @@ class Searcher:
             if remaining <= 0:
                 raise EngineError(engine.name, "request deadline reached", ErrorKind.TIMEOUT)
             async with asyncio.timeout(remaining):
-                output = await engine.search(query, self.ctx)
+                output = await _guarded(engine, query, self.ctx)
         except TimeoutError:
             error = EngineError(engine.name, "request deadline reached", ErrorKind.TIMEOUT)
             await self.breaker.record(engine.name, error)
@@ -277,7 +288,7 @@ class Searcher:
         await self.breaker.record(engine.name, None)
         report.latency_ms = int((time.monotonic() - started) * 1000)
         expires_at = None if storage is None else time.time() + storage
-        if cache_ttl > 0:
+        if cache_ttl > 0 and state.keep:
             await self.cache.set_json(key, {"output": output.model_dump(mode="json"),
                                             "expires_at": expires_at}, cache_ttl)
         result = self._finish(engine, query, report, output, expires_at)
@@ -427,6 +438,18 @@ def _classify(primary: list[Fragment], enrichment: list[Fragment],
     if all(f.report.status == ProviderStatus.RATE_LIMITED for f in primary_failures):
         return OutcomeStatus.RATE_LIMITED, f"upstream limits reached ({detail})"
     return OutcomeStatus.FAILED, f"no provider answered ({detail})"
+
+
+async def _guarded(engine: Engine, query: SearchQuery, ctx: EngineContext) -> EngineOutput:
+    """One provider's bug or surprise payload fails that provider, never the whole search."""
+    try:
+        return await engine.search(query, ctx)
+    except (EngineError, TimeoutError, asyncio.CancelledError):
+        raise
+    except Exception as exc:
+        logger.exception("engine %s raised unexpectedly", engine.name)
+        raise EngineError(engine.name, f"internal error: {type(exc).__name__}",
+                          ErrorKind.FAILED) from exc
 
 
 def _skip(engine: Engine, reason: str) -> ProviderReport:
