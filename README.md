@@ -182,6 +182,30 @@ parser fixtures were recorded from the real API. In summary:
 
 CI's `client-truth` job records where each of these clients actually sends its requests.
 
+## Running in production
+
+- **Keys and auth.** Set `FAIRSERP_API_KEYS`. With auth off (`FAIRSERP_AUTH_DISABLED=true`,
+  or the automatic loopback default), the server only answers requests addressed to
+  `localhost`, `127.0.0.1`, `::1` or the host in `FAIRSERP_PUBLIC_URL`, which blocks DNS
+  rebinding from a browser.
+- **Public URL and proxies.** Set `FAIRSERP_PUBLIC_URL=https://search.example.com` so self
+  links never come from a client's `Host` header. Behind a reverse proxy on another host,
+  set uvicorn's `FORWARDED_ALLOW_IPS` to the proxy's address so `X-Forwarded-Proto` is
+  trusted. Request bodies over 64 KB are refused with 413; set a similar limit on the proxy.
+- **Redis.** Use two instances (`docker-compose.yml` does): an LRU one for
+  `FAIRSERP_CACHE_BACKEND` and a `noeviction`, persisted one for `FAIRSERP_STATE_BACKEND`.
+  Redis 6.2 or newer. If the cache is unreachable, searches carry on uncached and a warning
+  is logged; if the state store is unreachable, requests get 503 `store_unavailable`
+  rather than running without quota accounting.
+- **Health.** `/healthz` is liveness (the process answers); `/readyz` checks both stores and
+  is what the container healthcheck uses.
+- **Config errors stop startup.** Malformed `FAIRSERP_*` values fail at boot with the
+  variable named, and misspelled engine names are logged at startup.
+- **Logs.** Provider keys and client keys are redacted everywhere, including MCP stderr.
+  `FAIRSERP_LOG_QUERIES=false` also keeps search text out of access logs.
+- **`/docs`** loads Swagger UI from jsDelivr, pinned to one release with Subresource
+  Integrity. Everything else is served by fairserp itself.
+
 ## Configuration
 
 All settings are `FAIRSERP_*` environment variables; `.env.example` lists them with comments.
