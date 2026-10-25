@@ -54,3 +54,6 @@ jobs:
       - run: mkdir -p ui-out && uv run python tests/e2e/playground_ui.py http://127.0.0.1:8101 http://127.0.0.1:8102 ui-out
       - if: always()
         run: tail -n 50 strict.log optin.log
+      # setup-uv's post step prunes the cache and waits on the lock the servers' uv processes hold.
+      - if: always()
+        run: pkill -f "fairserp serve" || true
