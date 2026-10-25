@@ -3,6 +3,7 @@
 import re
 from dataclasses import dataclass
 from functools import lru_cache
+from urllib.parse import urlsplit
 
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -11,6 +12,8 @@ from fairserp.rights import Profile
 
 _KEY_ENTRY = re.compile(r"^[^:\s]+(:\d+){0,2}$")
 _BUDGET_ENTRY = re.compile(r"^([a-z0-9_]+):(\d+)/(hour|day|month)(/key)?$")
+_PAIR_ENTRY = re.compile(r"^[\w-]+:[\w-]+$")
+_TTL_ENTRY = re.compile(r"^[\w-]+:\d+$")
 WINDOW_SECONDS = {"hour": 3600, "day": 86400, "month": 31 * 86400}
 
 
@@ -38,22 +41,23 @@ class Settings(BaseSettings):
     # auth_disabled=False rejects every request, so a fresh deploy is never an open relay.
     api_keys: str = ""
     auth_disabled: bool = False
-    default_hourly_limit: int = 1000
-    default_monthly_limit: int = 0
+    # 0 hourly blocks every search; 0 monthly means no monthly cap.
+    default_hourly_limit: int = Field(1000, ge=0)
+    default_monthly_limit: int = Field(0, ge=0)
 
     # Two stores. The cache store holds disposable data (fragments, archive, async jobs) and
     # may evict. The state store holds accounting, budgets and limiters and must not evict.
     cache_backend: str = "memory"
     state_backend: str = "memory"
-    cache_ttl_seconds: int = 3600
-    archive_ttl_seconds: int = 31 * 24 * 3600
-    cache_max_entries: int = 50_000
-    redis_max_connections: int = 50
+    cache_ttl_seconds: int = Field(3600, ge=0)  # 0 disables the fragment cache
+    archive_ttl_seconds: int = Field(31 * 24 * 3600, gt=0)
+    cache_max_entries: int = Field(50_000, ge=1)
+    redis_max_connections: int = Field(50, ge=1)
 
     # Outbound HTTP. trust_env stays off so HTTP(S)_PROXY variables never reroute traffic
     # behind the operator's back; "none" in engine_proxies then really means direct.
     user_agent: str = "fairserp/0.2 (+https://github.com/maximilliangrand/fairserp)"
-    http_timeout_seconds: float = 10.0
+    http_timeout_seconds: float = Field(10.0, gt=0)
     http_trust_env: bool = False
     # One egress proxy for all engines, plus optional sticky per-engine overrides as JSON,
     # e.g. FAIRSERP_ENGINE_PROXIES='{"brave": "http://proxy:3128", "wikipedia": "none"}'.
@@ -71,21 +75,21 @@ class Settings(BaseSettings):
     # "google". Empty by default: fairserp does not query Google and will not pretend to.
     serpapi_engines: str = ""
     organic_priority: str = "brave,mojeek,marginalia,tavily,exa,parallel,jina,firecrawl,searxng"
-    research_fanout: int = 3
+    research_fanout: int = Field(3, ge=1)
     # Keyless enrichment sources queried alongside organic results (page 1 only).
     enrichers: str = "wikidata,duckduckgo_ia"
     strict_params: bool = False
 
     # Time budgets.
-    request_deadline_seconds: float = 15.0
-    enrichment_budget_seconds: float = 2.5
+    request_deadline_seconds: float = Field(15.0, gt=0)
+    enrichment_budget_seconds: float = Field(2.5, gt=0)
 
     # Upstream budgets shared by the whole server, "engine:N/window" or per key
     # "engine:N/window/key". Windows: hour, day, month.
     upstream_budgets: str = ("firecrawl:900/month,firecrawl:300/month/key,"
                              "firecrawl:100/day/key")
-    circuit_failures: int = 5
-    circuit_cooldown_seconds: int = 30
+    circuit_failures: int = Field(5, ge=1)
+    circuit_cooldown_seconds: int = Field(30, ge=1)
 
     # Engine credentials and endpoints.
     brave_api_key: str = ""
@@ -122,6 +126,35 @@ class Settings(BaseSettings):
         for entry in _split(value):
             if not _BUDGET_ENTRY.match(entry):
                 raise ValueError(f"budget entries look like engine:N/day[/key], got {entry!r}")
+        return value
+
+    @field_validator("public_url")
+    @classmethod
+    def _check_public_url(cls, value: str | None) -> str | None:
+        if not value:
+            return value
+        parts = urlsplit(value)
+        if parts.scheme not in ("http", "https") or not parts.netloc:
+            raise ValueError(f"public URL must be an absolute http(s) URL, got {value!r}")
+        if parts.query or parts.fragment or value.endswith(("?", "#")):
+            raise ValueError(f"public URL must not carry a query or fragment, got {value!r}")
+        return value
+
+    @field_validator("serpapi_engines")
+    @classmethod
+    def _check_serpapi_engines(cls, value: str) -> str:
+        for entry in _split(value):
+            if not _PAIR_ENTRY.match(entry):
+                raise ValueError(f"SerpApi engine entries look like name:engine, got {entry!r}")
+        return value
+
+    @field_validator("engine_cache_ttl")
+    @classmethod
+    def _check_engine_cache_ttl(cls, value: str) -> str:
+        for entry in _split(value):
+            if not _TTL_ENTRY.match(entry):
+                raise ValueError(f"engine cache TTL entries look like engine:seconds, "
+                                 f"got {entry!r}")
         return value
 
     def parsed_api_keys(self) -> dict[str, KeyLimits]:
@@ -164,6 +197,12 @@ class Settings(BaseSettings):
 
     def priority(self) -> list[str]:
         return _split(self.organic_priority)
+
+    def unknown_engine_names(self, known: set[str]) -> list[str]:
+        """Names in organic_priority, enrichers or opt_in that match no known engine, in
+        first-seen order, so a typo can be reported at startup instead of silently ignored."""
+        named = self.priority() + self.enricher_names() + _split(self.opt_in)
+        return [name for name in dict.fromkeys(named) if name not in known]
 
 
 def _split(value: str) -> list[str]:
