@@ -16,7 +16,7 @@ from fairserp import __version__, locations, logs, playground, render, restricto
 from fairserp.archive import Archive
 from fairserp.config import KeyLimits, Settings, get_settings
 from fairserp.core import PlanError, Searcher
-from fairserp.engines import Engine, EngineError, build_registry
+from fairserp.engines import Engine, EngineError, Role, build_registry
 from fairserp.fetch import Fetcher, FetchError
 from fairserp.http import HttpPool
 from fairserp.limits import QuotaExceeded, Quotas, owner_id
@@ -71,6 +71,13 @@ def create_app(settings: Settings | None = None,
         )
         if not settings.public_url:
             logger.warning("FAIRSERP_PUBLIC_URL is unset; self links use each request's host")
+        searcher = app.state.services.searcher
+        auto = [engines[n] for n in settings.priority() if n in engines]
+        if not any(e.role == Role.ORGANIC and searcher.block_reason(e) is None for e in auto):
+            logger.warning("no web search provider is enabled, so only open-data engines and "
+                           "local search will answer. Set a provider key (for example "
+                           "FAIRSERP_BRAVE_API_KEY) or FAIRSERP_OPT_IN=firecrawl; GET "
+                           "/v1/engines lists why each one is off")
         yield
         services: Services = app.state.services
         await asyncio.gather(*services.background, return_exceptions=True)
