@@ -53,4 +53,4 @@ jobs:
           done
       - run: mkdir -p ui-out && uv run python tests/e2e/playground_ui.py http://127.0.0.1:8101 http://127.0.0.1:8102 ui-out
       - if: always()
-        run: tail -50 strict.log optin.log
+        run: tail -n 50 strict.log optin.log
