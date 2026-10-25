@@ -1,0 +1,25 @@
+# CI overlay: a deterministic mock upstream, so the required e2e job never depends on
+# third-party uptime. Live providers are exercised by the separate canary workflow.
+services:
+  mock-upstream:
+    image: python:3.12-slim
+    command: ["python", "/tests/e2e/mock_upstream.py"]
+    volumes:
+      - ./tests:/tests:ro
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/')"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+
+  fairserp:
+    environment:
+      - FAIRSERP_OPT_IN=searxng
+      - FAIRSERP_SEARXNG_URL=http://mock-upstream:8080
+      - FAIRSERP_ORGANIC_PRIORITY=searxng
+      - FAIRSERP_ENRICHERS=
+      - FAIRSERP_SERPAPI_ENGINES=google:auto
+      - FAIRSERP_PUBLIC_URL=http://localhost:8000
+    depends_on:
+      mock-upstream:
+        condition: service_healthy

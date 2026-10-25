@@ -1,0 +1,13 @@
+{
+  "name": "fairserp-client",
+  "version": "0.2.0",
+  "description": "Client for fairserp with an explicit base URL.",
+  "type": "module",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "license": "Apache-2.0",
+  "private": true,
+  "engines": { "node": ">=18" },
+  "scripts": { "test": "node --test test/*.test.mjs" },
+  "devDependencies": { "serpapi": "^2.2.1" }
+}

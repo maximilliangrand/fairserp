@@ -1,0 +1,89 @@
+name: ci
+
+# Required checks. Deterministic: no job here depends on a third-party search provider.
+# Live providers run in canary.yml, which is informational.
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - run: uv sync --frozen
+      - run: uv run ruff check .
+      - run: uv run pytest -v
+
+  client-truth:
+    # Where do real client libraries send requests? Each test records the destination.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: uv sync --frozen
+      - name: serpapi (Python, current client)
+        run: uv run --with serpapi pytest -v tests/clients/test_serpapi_python.py
+      - name: langchain-community SerpAPIWrapper (documents the aresults leak)
+        run: uv run --with google-search-results --with langchain-community --with aiohttp pytest -v tests/clients/test_langchain_community.py
+      - name: Node clients (fairserp-client and the official serpapi npm package)
+        working-directory: clients/typescript
+        run: npm install --no-audit --no-fund && npm test
+
+  docker-e2e:
+    runs-on: ubuntu-latest
+    needs: test
+    env:
+      FAIRSERP_API_KEYS: ci-key
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - name: docker compose up (app, cache Redis, state Redis, mock upstream)
+        run: docker compose -f docker-compose.yml -f docker-compose.e2e.yml up -d --build --wait --wait-timeout 180
+      - run: docker compose -f docker-compose.yml -f docker-compose.e2e.yml ps
+      - name: readiness checks both stores
+        run: |
+          curl -fsS http://localhost:8000/readyz | tee /dev/stderr | jq -e '.checks == {"cache": "ok", "state": "ok"}'
+      - name: native search through the full stack
+        run: |
+          curl -fsS -H "Authorization: Bearer ci-key" "http://localhost:8000/v1/search?q=coffee&freshness=h" -o native.json
+          jq '{status, resolved_engine, params, providers, results: .results[0:2], retention}' native.json
+          jq -e '.status == "success" and .results[0].sources[0].engine == "searxng" and .params.ignored == ["freshness"]' native.json
+      - name: SerpApi migration endpoint
+        run: |
+          curl -fsS -H "Authorization: Bearer ci-key" "http://localhost:8000/search.json?engine=google&q=coffee&device=mobile" -o serpapi.json
+          jq '{search_metadata, organic_results: .organic_results[0:2], knowledge_graph}' serpapi.json
+          jq -e '.search_metadata.fairserp.params.ignored == ["device"] and (.organic_results | length) == 2' serpapi.json
+      - name: strict profile refuses undisclosed providers
+        run: |
+          code=$(curl -s -o refused.json -w '%{http_code}' -H "Authorization: Bearer ci-key" "http://localhost:8000/v1/search?q=x&engine=firecrawl")
+          cat refused.json; test "$code" = 403
+      - name: official SerpApi python client, base URL changed only
+        run: uv run --no-project --with serpapi python scripts/compat_check.py http://localhost:8000 ci-key
+      - name: quotas live in the state store and cache hits are free
+        run: |
+          before=$(curl -fsS -H "Authorization: Bearer ci-key" http://localhost:8000/account.json | jq .this_hour_searches)
+          curl -fsS -H "Authorization: Bearer ci-key" "http://localhost:8000/v1/search?q=coffee&freshness=h" > /dev/null
+          after=$(curl -fsS -H "Authorization: Bearer ci-key" http://localhost:8000/account.json | jq .this_hour_searches)
+          echo "before=$before after=$after"; test "$before" = "$after"
+          docker compose exec -T redis-state redis-cli --scan --pattern 'usage:*' | tee keys.txt; test -s keys.txt
+          test -z "$(docker compose exec -T redis-cache redis-cli --scan --pattern 'usage:*')"
+          test "$(curl -s -o /dev/null -w '%{http_code}' 'http://localhost:8000/search.json?q=x&api_key=wrong')" = 401
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e2e-responses
+          path: "*.json"
+      - name: logs (keys must be redacted)
+        if: always()
+        run: |
+          docker compose logs fairserp | tee app.log
+          ! grep -q "ci-key" app.log
+      - if: always()
+        run: docker compose -f docker-compose.yml -f docker-compose.e2e.yml down -v
