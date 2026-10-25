@@ -102,7 +102,13 @@ def build(settings: Settings | None = None, runtime: Runtime | None = None) -> M
         try:
             plan = rt.searcher.plan(query)
         except PlanError as exc:
-            return {"status": "refused", "error": exc.message}
+            refused = {"status": "refused", "error": exc.message}
+            if exc.code == "no_engine_enabled":
+                refused["fix"] = ("This MCP server reads its own environment, not an HTTP "
+                                  "server's. Add FAIRSERP_OPT_IN=firecrawl or a provider key "
+                                  "such as FAIRSERP_BRAVE_API_KEY to the env block of its MCP "
+                                  "config, then restart the client.")
+            return refused
         outcome = await rt.searcher.run(query, plan, "mcp", MCP_KEY, query.engine)
         return compact(outcome)
 
@@ -117,9 +123,9 @@ def build(settings: Settings | None = None, runtime: Runtime | None = None) -> M
                                          country=country, language=language, mode=Mode(mode)))
 
     @server.tool(description="Find places of a kind near a location, from OpenStreetMap. "
-                             "Example: query='pizza', near='Brooklyn, New York'.")
-    async def local_search(query: str, near: str, num: int = 5) -> dict[str, Any]:
-        return await _search(SearchQuery(q=query, location=near, vertical=Vertical.LOCAL,
+                             "Example: query='pizza', location='Brooklyn, New York'.")
+    async def local_search(query: str, location: str, num: int = 5) -> dict[str, Any]:
+        return await _search(SearchQuery(q=query, location=location, vertical=Vertical.LOCAL,
                                          num=min(max(num, 1), 20)))
 
     @server.tool(description="Read a public web page and return the passages most relevant to "

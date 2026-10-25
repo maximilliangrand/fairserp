@@ -72,8 +72,10 @@ def test_safe_search_is_never_relaxed():
 
 def test_strict_params_reject_instead_of_ignoring():
     plain = stubs.organic("plain")
-    with pytest.raises(PlanError):
+    with pytest.raises(PlanError) as exc:
         searcher(plain).plan(SearchQuery(q="x", freshness="d", strict_params=True))
+    assert exc.value.status == 400 and exc.value.code == "params_unsupported"
+    assert "can apply freshness" in exc.value.message
     assert searcher(plain).plan(SearchQuery(q="x", freshness="d")).organic
 
 

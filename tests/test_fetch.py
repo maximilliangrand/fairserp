@@ -192,3 +192,10 @@ async def test_mcp_tools_use_the_same_policy():
     assert "Tokio tutorial" in fetched
     refused = str(await server.call_tool("fetch", {"url": "http://127.0.0.1/"}))
     assert "refused" in refused
+    places = str(await server.call_tool("local_search", {"query": "pizza", "location": "X"}))
+    assert "refused" not in places
+    bare = settings(organic_priority="missing", upstream_budgets="")
+    bare_server = build(bare, Runtime(Searcher(bare, registry, HttpPool(bare), MemoryStore(100),
+                                               MemoryStore()), f, HttpPool(bare)))
+    unset = str(await bare_server.call_tool("web_search", {"query": "coffee"}))
+    assert "refused" in unset and "env block" in unset

@@ -137,6 +137,9 @@ class Searcher:
         if not candidates:
             if query.safe:
                 raise PlanError(400, _no_engine_message(query, skipped), "safe_search_unavailable")
+            if any(r.error and r.error.startswith("cannot apply ") for r in skipped):
+                raise PlanError(400, _no_engine_message(query, skipped), "params_unsupported",
+                                [{"engine": r.engine, "reason": r.error} for r in skipped])
             raise PlanError(503, _no_engine_message(query, skipped), "no_engine_enabled",
                             [{"engine": r.engine, "reason": r.error} for r in skipped])
         if query.mode == Mode.PRIVATE:
@@ -435,6 +438,12 @@ def _no_engine_message(query: SearchQuery, skipped: list[ProviderReport]) -> str
     if query.safe:
         return ("Safe search was requested but no enabled organic engine can enforce it; "
                 "refusing to run the query unfiltered.")
+    unapplied = sorted({p for r in skipped if r.error and r.error.startswith("cannot apply ")
+                        for p in r.error.removeprefix("cannot apply ").split(", ")})
+    if unapplied:
+        return (f"Strict params are on and no enabled web provider can apply "
+                f"{', '.join(unapplied)}. Turn off strict_params to run the search and have "
+                f"those params reported as ignored, or enable a provider that supports them.")
     return ("No web search provider is enabled on this server. Add a provider key (for "
             "example FAIRSERP_BRAVE_API_KEY) or opt in to a keyless provider "
             "(FAIRSERP_OPT_IN=firecrawl). GET /v1/engines lists why each one is off.")
