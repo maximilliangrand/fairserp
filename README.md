@@ -194,11 +194,15 @@ CI's `client-truth` job records where each of these clients actually sends its r
   trusted. Request bodies over 64 KB are refused with 413; set a similar limit on the proxy.
 - **Redis.** Use two instances (`docker-compose.yml` does): an LRU one for
   `FAIRSERP_CACHE_BACKEND` and a `noeviction`, persisted one for `FAIRSERP_STATE_BACKEND`.
-  Redis 6.2 or newer. If the cache is unreachable, searches carry on uncached and a warning
-  is logged; if the state store is unreachable, requests get 503 `store_unavailable`
-  rather than running without quota accounting.
-- **Health.** `/healthz` is liveness (the process answers); `/readyz` checks both stores and
-  is what the container healthcheck uses.
+  Redis 6.2 or newer. If the cache is unreachable, searches carry on uncached (a warning is
+  logged, and Redis is retried after a few seconds rather than on every call), but nothing
+  is archived and `async=true` is refused with 503 rather than accepted and lost. If the
+  state store is unreachable, requests get 503 `store_unavailable` rather than running
+  without quota accounting.
+- **Health.** `/healthz` is liveness (the process answers). `/readyz` is ready when the
+  state store answers; it reports the cache too, without failing on it. The container
+  healthcheck uses `/readyz`. Both skip the auth-off Host check, so probes can use any
+  address.
 - **Config errors stop startup.** Malformed `FAIRSERP_*` values fail at boot with the
   variable named, and misspelled engine names are logged at startup.
 - **Logs.** Provider keys and client keys are redacted everywhere, including MCP stderr.

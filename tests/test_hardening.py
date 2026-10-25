@@ -21,7 +21,7 @@ from fairserp.restrictor import apply
 from fairserp.store import MemoryStore, RedisStore
 from tests import stubs  # noqa: F401
 from tests.conftest import settings
-from tests.test_api import AUTH, client
+from tests.test_api import AUTH, client, usage
 
 
 def test_httpx_url_objects_and_path_secrets_are_redacted():
@@ -194,3 +194,36 @@ def test_startup_names_misspelled_engines(caplog):
             client(stubs.organic("a"), organic_priority="a,brvae"):
         pass
     assert "brvae" in caplog.text
+
+
+def test_chunked_oversized_body_is_413():
+    def chunks():
+        for _ in range(10):
+            yield b"x" * 10_000
+
+    with client(stubs.organic("a")) as c:
+        response = c.post("/v1/search", content=chunks(),
+                          headers={**AUTH, "Content-Type": "application/json"})
+    assert response.status_code == 413
+
+
+def test_auth_off_host_check_spares_probes_and_reads_ipv6_public_hosts():
+    with client(stubs.organic("a"), api_keys="", auth_disabled=True,
+                public_url="http://[2001:db8::5]:8000") as c:
+        probe = c.get("/healthz", headers={"Host": "10.0.0.7:8000"})
+        ipv6 = c.get("/v1/search", params={"q": "x"}, headers={"Host": "[2001:db8::5]:8000"})
+        trick = c.get("/v1/search", params={"q": "x"}, headers={"Host": "[::1]evil.example"})
+    assert probe.status_code == 200 and ipv6.status_code == 200 and trick.status_code == 421
+
+
+def test_cache_outage_keeps_searching_but_refuses_async_and_stays_ready():
+    down = "redis://127.0.0.1:1/0"
+    with client(stubs.organic("a"), cache_backend=down) as c:
+        before = usage(c)
+        sync = c.get("/search.json", params={"q": "x"}, headers=AUTH)
+        queued = c.get("/search.json", params={"q": "y", "async": "true"}, headers=AUTH)
+        after = usage(c)
+        ready = c.get("/readyz")
+    assert sync.status_code == 200 and not sync.json()["search_metadata"]["fairserp"]["archived"]
+    assert queued.status_code == 503 and after == before + 1
+    assert ready.status_code == 200 and ready.json()["checks"]["cache"] != "ok"

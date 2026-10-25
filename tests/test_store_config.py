@@ -80,8 +80,11 @@ async def test_down_cache_store_fails_open_with_rate_limited_warning(caplog):
         await cache.delete("k")
         assert len(caplog.records) == 1
         cache._last_warning -= WARNING_INTERVAL_SECONDS
+        cache._down_until = float("-inf")  # past the cooldown, so Redis is tried again
         assert await cache.get_json("k") is None
         assert len(caplog.records) == 2
+        with pytest.raises(StoreUnavailable):  # archive and job records never fail open
+            await cache.set_json("k", {"a": 1}, 60, required=True)
     assert not await cache.ping()
     await cache.close()
 
@@ -157,3 +160,20 @@ async def test_memory_cache_drops_expired_before_live_entries():
     await cache.set_json("new", 1, 100)
     assert await cache.get_json("live") == 1 and await cache.get_json("new") == 1
     assert len(cache._data) == 2
+
+
+async def test_down_cache_is_skipped_during_the_cooldown():
+    cache = create_store(DOWN_REDIS, max_entries=100)
+    calls = 0
+    real_get = cache._redis.get
+
+    async def counting_get(key):
+        nonlocal calls
+        calls += 1
+        return await real_get(key)
+
+    cache._redis.get = counting_get
+    for _ in range(5):
+        assert await cache.get_json("k") is None
+    assert calls == 1
+    await cache.close()

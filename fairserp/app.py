@@ -211,7 +211,11 @@ async def execute(services: Services, query: SearchQuery, requested_engine: str,
     owner = owner_id(api_key)
     if run_async:
         lease = services.settings.request_deadline_seconds + 15
-        job = await services.archive.start_job(owner, search_id, context, lease)
+        try:
+            job = await services.archive.start_job(owner, search_id, context, lease)
+        except StoreUnavailable:
+            await services.quotas.release(reservation)
+            raise
         task = asyncio.create_task(_background(services, query, plan, search_id, api_key,
                                                requested_engine, reservation, context))
         services.background.add(task)
@@ -523,7 +527,9 @@ def _register(app: FastAPI) -> None:
                 checks[name] = "ok" if await store.ping() else "down"
             except Exception as exc:
                 checks[name] = f"down: {type(exc).__name__}"
-        ready = all(v == "ok" for v in checks.values())
+        # Searches run without the cache (uncached, no archive or async), so only the state
+        # store decides readiness; a cache outage shows in checks without draining traffic.
+        ready = checks["state"] == "ok"
         return JSONResponse({"status": "ready" if ready else "not_ready", "checks": checks},
                             status_code=200 if ready else 503)
 

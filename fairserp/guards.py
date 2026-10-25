@@ -6,11 +6,18 @@ from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 # Search and fetch bodies are a few hundred bytes; nothing legitimate comes close.
 MAX_BODY_BYTES = 64 * 1024
-LOOPBACK_HOSTS = frozenset({"localhost", "127.0.0.1", "::1", "[::1]"})
+LOOPBACK_HOSTS = frozenset({"localhost", "127.0.0.1", "::1"})
+# Liveness and readiness carry no data, and probes address the pod IP or a service name.
+UNGUARDED_PATHS = frozenset({"/healthz", "/readyz"})
 
 
-class _TooLarge(Exception):
-    pass
+def host_name(host: str) -> str:
+    """The name part of a Host header, lowercased, with IPv6 brackets removed."""
+    host = host.strip().lower()
+    if host.startswith("["):
+        name, _, rest = host[1:].partition("]")
+        return name if rest == "" or rest[1:].isdigit() and rest[0] == ":" else host
+    return host.rsplit(":", 1)[0] if host.count(":") == 1 else host
 
 
 class BodyLimit:
@@ -30,27 +37,28 @@ class BodyLimit:
             await self._refuse(scope, receive, send)
             return
         seen = 0
-        started = False
+        started = refused = False
 
         async def counted_receive() -> Message:
-            nonlocal seen
+            # A chunked body has no Content-Length: once it passes the limit, answer 413
+            # ourselves and tell the app the client went away, so it stops reading.
+            nonlocal seen, refused
             message = await receive()
-            if message["type"] == "http.request":
+            if message["type"] == "http.request" and not refused:
                 seen += len(message.get("body", b""))
-                if seen > self.max_bytes:
-                    raise _TooLarge
-            return message
+                if seen > self.max_bytes and not started:
+                    refused = True
+                    await self._refuse(scope, receive, send)
+            return {"type": "http.disconnect"} if refused else message
 
         async def tracked_send(message: Message) -> None:
             nonlocal started
+            if refused:
+                return
             started = started or message["type"] == "http.response.start"
             await send(message)
 
-        try:
-            await self.app(scope, counted_receive, tracked_send)
-        except _TooLarge:
-            if not started:
-                await self._refuse(scope, receive, send)
+        await self.app(scope, counted_receive, tracked_send)
 
     async def _refuse(self, scope: Scope, receive: Receive, send: Send) -> None:
         response = JSONResponse({"error": f"Request body over {self.max_bytes} bytes."},
@@ -65,13 +73,12 @@ class LoopbackHostOnly:
 
     def __init__(self, app: ASGIApp, extra_hosts: frozenset[str] = frozenset()) -> None:
         self.app = app
-        self.allowed = LOOPBACK_HOSTS | extra_hosts
+        self.allowed = LOOPBACK_HOSTS | {h.lower().strip("[]") for h in extra_hosts}
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        if scope["type"] == "http":
-            host = Headers(scope=scope).get("host", "")
-            name = host.rsplit(":", 1)[0] if not host.endswith("]") else host
-            if name.lower() not in self.allowed:
+        if scope["type"] == "http" and scope["path"] not in UNGUARDED_PATHS:
+            name = host_name(Headers(scope=scope).get("host", ""))
+            if name not in self.allowed:
                 response = JSONResponse(
                     {"error": "Auth is off, so this server only answers requests addressed to "
                               "localhost. Set FAIRSERP_API_KEYS, or FAIRSERP_PUBLIC_URL to the "

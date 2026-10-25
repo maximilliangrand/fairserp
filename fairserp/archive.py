@@ -15,7 +15,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from fairserp.model import SearchOutcome
-from fairserp.store import Store
+from fairserp.store import Store, StoreUnavailable
 
 TOMBSTONE_TTL = 24 * 3600
 
@@ -30,7 +30,8 @@ class Archive:
         return f"search:{search_id}"
 
     async def save(self, owner: str, outcome: SearchOutcome, context: dict[str, Any]) -> bool:
-        """Store an outcome for its owner. Returns False when retention forbids keeping it."""
+        """Store an outcome for its owner. Returns False when retention forbids keeping it or
+        the store is unreachable, so no response advertises a link that would 404."""
         ttl = float(self._ttl)
         if outcome.retention.expires_at:
             deadline = datetime.fromisoformat(outcome.retention.expires_at).timestamp()
@@ -41,10 +42,13 @@ class Archive:
                 "reason": "a contributing provider's terms do not allow storing results",
             }, TOMBSTONE_TTL)
             return False
-        await self._cache.set_json(self._key(outcome.id), {
-            "owner": owner, "kind": "outcome", "context": context,
-            "outcome": outcome.model_dump(mode="json"),
-        }, ttl)
+        try:
+            await self._cache.set_json(self._key(outcome.id), {
+                "owner": owner, "kind": "outcome", "context": context,
+                "outcome": outcome.model_dump(mode="json"),
+            }, ttl, required=True)
+        except StoreUnavailable:
+            return False
         return True
 
     async def start_job(self, owner: str, search_id: str, context: dict[str, Any],
@@ -52,7 +56,8 @@ class Archive:
         record = {"owner": owner, "kind": "job", "context": context,
                   "created_at": datetime.now(UTC).strftime("%Y-%m-%d %H:%M:%S UTC"),
                   "lease_until": time.time() + lease_seconds}
-        await self._cache.set_json(self._key(search_id), record, self._ttl)
+        # Required: without the record the caller would poll a 404 for a search it paid for.
+        await self._cache.set_json(self._key(search_id), record, self._ttl, required=True)
         return record
 
     async def fail_job(self, owner: str, search_id: str, context: dict[str, Any],
