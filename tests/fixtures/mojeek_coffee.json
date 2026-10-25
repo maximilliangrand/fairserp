@@ -1,0 +1,10 @@
+{
+ "response": {
+  "status": "OK",
+  "head": {"query": "coffee", "start": 1, "return": 2, "results": 3121948, "timer": 0.11},
+  "results": [
+   {"url": "https://en.wikipedia.org/wiki/Coffee", "title": "Coffee - Wikipedia", "desc": "Coffee is a beverage brewed from roasted, ground coffee beans.", "date": 1760000000},
+   {"url": "https://www.ncausa.org/About-Coffee", "title": "About Coffee | NCA", "desc": "Learn about the history of coffee and how it is grown."}
+  ]
+ }
+}

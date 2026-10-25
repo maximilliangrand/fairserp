@@ -1,0 +1,30 @@
+name: Engine request
+description: Propose a new search provider adapter
+labels: [engine]
+body:
+  - type: input
+    id: provider
+    attributes:
+      label: Provider and API documentation URL
+    validations:
+      required: true
+  - type: dropdown
+    id: access
+    attributes:
+      label: How does the provider grant access?
+      options:
+        - Official API with published terms
+        - Open data with a published license
+        - Other (explain below)
+    validations:
+      required: true
+  - type: textarea
+    id: terms
+    attributes:
+      label: Terms that matter
+      description: Provenance, commercial use, storage limits, attribution, and the terms URL.
+    validations:
+      required: true
+  - type: markdown
+    attributes:
+      value: Adapters that scrape HTML, solve challenges or rotate IPs are out of scope and will be closed (see CONTRIBUTING.md).

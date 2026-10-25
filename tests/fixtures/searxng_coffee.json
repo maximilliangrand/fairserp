@@ -1,0 +1,15 @@
+{
+ "query": "coffee",
+ "number_of_results": 0,
+ "results": [
+  {"url": "https://en.wikipedia.org/wiki/Coffee", "title": "Coffee - Wikipedia", "content": "Coffee is a beverage brewed from roasted, ground coffee beans.", "engine": "wikipedia", "engines": ["wikipedia", "brave"], "score": 4.0, "category": "general"},
+  {"url": "https://www.ncausa.org/About-Coffee", "title": "About Coffee", "content": "Learn about the history of coffee.", "engine": "mojeek", "engines": ["mojeek"], "score": 1.0, "category": "general", "publishedDate": "2025-06-01T00:00:00"}
+ ],
+ "answers": [],
+ "corrections": [],
+ "infoboxes": [
+  {"infobox": "Coffee", "id": "https://en.wikipedia.org/wiki/Coffee", "content": "Coffee is a beverage brewed from roasted coffee beans.", "img_src": "https://upload.wikimedia.org/coffee.jpg", "attributes": [{"label": "Inception", "value": "15th century"}], "engine": "wikidata"}
+ ],
+ "suggestions": ["coffee near me", "coffee beans"],
+ "unresponsive_engines": []
+}

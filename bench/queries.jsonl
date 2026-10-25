@@ -1,0 +1,50 @@
+{"id": "tech-01", "category": "technical", "q": "python asyncio gather return_exceptions", "relevant": ["docs\\.python\\.org", "stackoverflow\\.com", "superfastpython\\.com"]}
+{"id": "tech-02", "category": "technical", "q": "tokio select macro", "relevant": ["docs\\.rs/tokio", "tokio\\.rs"]}
+{"id": "tech-03", "category": "technical", "q": "postgres jsonb gin index", "relevant": ["postgresql\\.org", "stackoverflow\\.com", "dba\\.stackexchange\\.com"]}
+{"id": "tech-04", "category": "technical", "q": "git rebase --onto example", "relevant": ["git-scm\\.com", "stackoverflow\\.com"]}
+{"id": "tech-05", "category": "technical", "q": "kubernetes CrashLoopBackOff troubleshooting", "relevant": ["kubernetes\\.io", "stackoverflow\\.com", "komodor\\.com", "sysdig\\.com", "redhat\\.com"]}
+{"id": "tech-06", "category": "technical", "q": "react useEffect cleanup function", "relevant": ["react\\.dev", "legacy\\.reactjs\\.org", "stackoverflow\\.com"]}
+{"id": "tech-07", "category": "technical", "q": "typescript satisfies operator", "relevant": ["typescriptlang\\.org", "stackoverflow\\.com"]}
+{"id": "tech-08", "category": "technical", "q": "docker compose healthcheck depends_on condition", "relevant": ["docs\\.docker\\.com", "stackoverflow\\.com"]}
+{"id": "tech-09", "category": "technical", "q": "nginx proxy_pass trailing slash", "relevant": ["nginx\\.org", "stackoverflow\\.com", "serverfault\\.com"]}
+{"id": "tech-10", "category": "technical", "q": "sqlite WAL mode concurrency", "relevant": ["sqlite\\.org", "stackoverflow\\.com"]}
+{"id": "nav-01", "category": "navigational", "q": "python official website", "relevant": ["^https://python\\.org"]}
+{"id": "nav-02", "category": "navigational", "q": "MDN web docs", "relevant": ["developer\\.mozilla\\.org"]}
+{"id": "nav-03", "category": "navigational", "q": "openstreetmap", "relevant": ["^https://openstreetmap\\.org"]}
+{"id": "nav-04", "category": "navigational", "q": "european central bank", "relevant": ["ecb\\.europa\\.eu"]}
+{"id": "nav-05", "category": "navigational", "q": "nasa", "relevant": ["^https://nasa\\.gov", "\\.nasa\\.gov"]}
+{"id": "nav-06", "category": "navigational", "q": "bbc news", "relevant": ["bbc\\.co\\.uk/news", "bbc\\.com/news"]}
+{"id": "nav-07", "category": "navigational", "q": "github", "relevant": ["^https://github\\.com"]}
+{"id": "nav-08", "category": "navigational", "q": "rust programming language", "relevant": ["rust-lang\\.org"]}
+{"id": "nav-09", "category": "navigational", "q": "the guardian", "relevant": ["theguardian\\.com"]}
+{"id": "nav-10", "category": "navigational", "q": "hacker news", "relevant": ["news\\.ycombinator\\.com"]}
+{"id": "ent-01", "category": "entity", "q": "einstein", "relevant": ["Albert_Einstein", "einstein\\.biz", "alberteinstein\\.com"], "wikidata": "Q937"}
+{"id": "ent-02", "category": "entity", "q": "alan turing", "relevant": ["Alan_Turing", "turing\\.org\\.uk"], "wikidata": "Q7251"}
+{"id": "ent-03", "category": "entity", "q": "marie curie", "relevant": ["Marie_Curie", "nobelprize\\.org"], "wikidata": "Q7186"}
+{"id": "ent-04", "category": "entity", "q": "jaguar", "relevant": ["wiki/Jaguar", "jaguar\\.com", "jaguarusa\\.com"]}
+{"id": "ent-05", "category": "entity", "q": "mercury", "relevant": ["wiki/Mercury", "nasa\\.gov"]}
+{"id": "ent-06", "category": "entity", "q": "ada lovelace", "relevant": ["Ada_Lovelace"], "wikidata": "Q7259"}
+{"id": "ent-07", "category": "entity", "q": "linus torvalds", "relevant": ["Linus_Torvalds"], "wikidata": "Q34253"}
+{"id": "ent-08", "category": "entity", "q": "eiffel tower", "relevant": ["Eiffel_Tower", "toureiffel\\.paris"], "wikidata": "Q243"}
+{"id": "ent-09", "category": "entity", "q": "amazon river", "relevant": ["Amazon_River", "britannica\\.com"], "wikidata": "Q3783"}
+{"id": "ent-10", "category": "entity", "q": "kyoto", "relevant": ["wiki/Kyoto", "kyoto\\.travel", "city\\.kyoto"], "wikidata": "Q34600"}
+{"id": "news-01", "category": "news", "q": "central bank interest rate decision", "freshness": "w", "relevant": ["reuters\\.com", "apnews\\.com", "bloomberg\\.com", "cnbc\\.com", "ft\\.com", "bbc\\.", "nytimes\\.com", "wsj\\.com", "theguardian\\.com", "ecb\\.europa\\.eu", "federalreserve\\.gov"]}
+{"id": "news-02", "category": "news", "q": "earthquake", "freshness": "w", "relevant": ["usgs\\.gov", "reuters\\.com", "apnews\\.com", "bbc\\.", "cnn\\.com", "aljazeera\\.com", "emsc-csem\\.org"]}
+{"id": "news-03", "category": "news", "q": "stock market today", "freshness": "d", "relevant": ["cnbc\\.com", "reuters\\.com", "bloomberg\\.com", "marketwatch\\.com", "wsj\\.com", "finance\\.yahoo\\.com", "nytimes\\.com", "apnews\\.com"]}
+{"id": "news-04", "category": "news", "q": "tech layoffs", "freshness": "w", "relevant": ["techcrunch\\.com", "theverge\\.com", "reuters\\.com", "cnbc\\.com", "layoffs\\.fyi", "bloomberg\\.com", "nytimes\\.com"]}
+{"id": "news-05", "category": "news", "q": "rocket launch", "freshness": "w", "relevant": ["spacex\\.com", "nasa\\.gov", "space\\.com", "spaceflightnow\\.com", "reuters\\.com", "nextspaceflight\\.com"]}
+{"id": "news-06", "category": "news", "q": "climate summit", "freshness": "m", "relevant": ["unfccc\\.int", "reuters\\.com", "theguardian\\.com", "bbc\\.", "apnews\\.com", "carbonbrief\\.org", "un\\.org"]}
+{"id": "news-07", "category": "news", "q": "election results", "freshness": "w", "relevant": ["reuters\\.com", "apnews\\.com", "bbc\\.", "cnn\\.com", "nytimes\\.com", "politico\\.", "theguardian\\.com"]}
+{"id": "news-08", "category": "news", "q": "champions league results", "freshness": "w", "relevant": ["uefa\\.com", "espn\\.", "bbc\\.", "skysports\\.com", "theguardian\\.com", "goal\\.com"]}
+{"id": "ml-01", "category": "multilingual", "q": "Bundesverfassungsgericht Urteil", "language": "de", "relevant": ["\\.de/", "\\.de$", "de\\.wikipedia\\.org"]}
+{"id": "ml-02", "category": "multilingual", "q": "東京 天気", "language": "ja", "relevant": ["\\.jp/", "\\.jp$", "ja\\.wikipedia\\.org", "weathernews"]}
+{"id": "ml-03", "category": "multilingual", "q": "recette crêpes", "language": "fr", "relevant": ["\\.fr/", "\\.fr$", "marmiton", "fr\\.wikipedia\\.org"]}
+{"id": "ml-04", "category": "multilingual", "q": "receta paella valenciana", "language": "es", "relevant": ["\\.es/", "\\.es$", "es\\.wikipedia\\.org", "recetasgratis", "directoalpaladar"]}
+{"id": "ml-05", "category": "multilingual", "q": "orari treni trenitalia", "language": "it", "relevant": ["trenitalia\\.com", "\\.it/", "\\.it$"]}
+{"id": "ml-06", "category": "multilingual", "q": "previsão do tempo lisboa", "language": "pt", "relevant": ["\\.pt/", "\\.pt$", "ipma\\.pt", "pt\\.wikipedia\\.org"]}
+{"id": "loc-01", "category": "local", "q": "coffee", "location": "Austin, Texas", "min_places": 3}
+{"id": "loc-02", "category": "local", "q": "pizza", "location": "Brooklyn, New York", "min_places": 3}
+{"id": "loc-03", "category": "local", "q": "pharmacy", "location": "Vienna, Austria", "min_places": 3}
+{"id": "loc-04", "category": "local", "q": "museum", "location": "Paris, France", "min_places": 3}
+{"id": "loc-05", "category": "local", "q": "bakery", "location": "Berlin, Germany", "min_places": 3}
+{"id": "loc-06", "category": "local", "q": "hotel", "location": "Lisbon, Portugal", "min_places": 3}

@@ -1,0 +1,624 @@
+{
+ "Abstract": "Albert Einstein was a German-born theoretical physicist best known for developing the theory of relativity. Einstein also made important contributions to quantum theory. His mass–energy equivalence formula E = mc², which arises from special relativity, has been called \"the world's most famous equation\". He received the 1921 Nobel Prize in Physics for \"his services to theoretical physics, and especially for his discovery of the law of the photoelectric effect\". Born as a subject to the Kingdom of Württemberg, part of the German Empire, Einstein moved to Switzerland in 1895, forsaking his citizenship the following year. In 1896, at the age of seventeen, he enrolled in the mathematics and physics teaching diploma program at the Swiss federal polytechnic school in Zurich, graduating in 1900. He acquired Swiss citizenship a year later, which he kept for the rest of his life, and afterwards secured a permanent position at the Swiss Patent Office in Bern.",
+ "AbstractSource": "Wikipedia",
+ "AbstractText": "Albert Einstein was a German-born theoretical physicist best known for developing the theory of relativity. Einstein also made important contributions to quantum theory. His mass–energy equivalence formula E = mc², which arises from special relativity, has been called \"the world's most famous equation\". He received the 1921 Nobel Prize in Physics for \"his services to theoretical physics, and especially for his discovery of the law of the photoelectric effect\". Born as a subject to the Kingdom of Württemberg, part of the German Empire, Einstein moved to Switzerland in 1895, forsaking his citizenship the following year. In 1896, at the age of seventeen, he enrolled in the mathematics and physics teaching diploma program at the Swiss federal polytechnic school in Zurich, graduating in 1900. He acquired Swiss citizenship a year later, which he kept for the rest of his life, and afterwards secured a permanent position at the Swiss Patent Office in Bern.",
+ "AbstractURL": "https://en.wikipedia.org/wiki/Albert_Einstein",
+ "Answer": "",
+ "AnswerType": "",
+ "Definition": "",
+ "DefinitionSource": "",
+ "DefinitionURL": "",
+ "Entity": "scientist",
+ "Heading": "Albert Einstein",
+ "Image": "/i/267e7b7843e75cdd.jpg",
+ "ImageHeight": 640,
+ "ImageIsLogo": 0,
+ "ImageWidth": 517,
+ "Infobox": {
+  "content": [
+   {
+    "data_type": "string",
+    "label": "Born",
+    "sort_order": "1",
+    "value": "March 14, 1879, Ulm, Kingdom of Württemberg, German Empire",
+    "wiki_order": 0
+   },
+   {
+    "data_type": "string",
+    "label": "Age at death",
+    "value": "76 years",
+    "wiki_order": 0
+   },
+   {
+    "data_type": "string",
+    "label": "Died",
+    "sort_order": "1",
+    "value": "April 18, 1955, Princeton, New Jersey, U.S.",
+    "wiki_order": 1
+   },
+   {
+    "data_type": "string",
+    "label": "Fields",
+    "sort_order": "1",
+    "value": "Physics",
+    "wiki_order": 2
+   },
+   {
+    "data_type": "string",
+    "label": "Thesis",
+    "sort_order": "2",
+    "value": "Eine neue Bestimmung der Moleküldimensionen (A New Determination of Molecular Dimensions) (1905)",
+    "wiki_order": 3
+   },
+   {
+    "data_type": "string",
+    "label": "Other academic advisors",
+    "sort_order": "1000",
+    "value": "Heinrich Friedrich Weber",
+    "wiki_order": 4
+   },
+   {
+    "data_type": "string",
+    "label": "Spouse",
+    "sort_order": "4",
+    "value": "Mileva Marić, Elsa Löwenthal",
+    "wiki_order": 5
+   },
+   {
+    "data_type": "string",
+    "label": "Children",
+    "sort_order": "4",
+    "value": "3, including Hans Albert",
+    "wiki_order": 6
+   },
+   {
+    "data_type": "instagram_profile",
+    "label": "Instagram profile",
+    "value": "alberteinstein",
+    "wiki_order": "103"
+   },
+   {
+    "data_type": "facebook_profile",
+    "label": "Facebook profile",
+    "value": "AlbertEinstein",
+    "wiki_order": "104"
+   },
+   {
+    "data_type": "imdb_id",
+    "label": "IMDb ID",
+    "value": "nm0251868",
+    "wiki_order": "106"
+   },
+   {
+    "data_type": "rotten_tomatoes",
+    "label": "Rotten Tomatoes ID",
+    "value": "celebrity/albert_einstein",
+    "wiki_order": "107"
+   },
+   {
+    "data_type": "instance",
+    "label": "Instance of",
+    "value": {
+     "entity-type": "item",
+     "id": "Q5",
+     "numeric-id": 5
+    },
+    "wiki_order": "207"
+   },
+   {
+    "data_type": "official_website",
+    "label": "Official Website",
+    "value": "https://alberteinstein.com",
+    "wiki_order": "208"
+   },
+   {
+    "data_type": "date_of_birth",
+    "label": "Born",
+    "value": {
+     "after": 0,
+     "before": 0,
+     "calendarmodel": "http://www.wikidata.org/entity/Q1985727",
+     "precision": 11,
+     "time": "+1879-03-14T00:00:00Z",
+     "timezone": 0
+    },
+    "wiki_order": "209"
+   },
+   {
+    "data_type": "date_of_death",
+    "label": "Died",
+    "value": {
+     "after": 0,
+     "before": 0,
+     "calendarmodel": "http://www.wikidata.org/entity/Q1985727",
+     "precision": 11,
+     "time": "+1955-04-18T00:00:00Z",
+     "timezone": 0
+    },
+    "wiki_order": "210"
+   },
+   {
+    "data_type": "wd_description",
+    "label": "Wikidata description",
+    "value": "German-born theoretical physicist (1879–1955)",
+    "wiki_order": "210"
+   },
+   {
+    "data_type": "wikidata_id",
+    "label": "Wikidata id",
+    "value": "Q937",
+    "wiki_order": "211"
+   },
+   {
+    "data_type": "wikidata_label",
+    "label": "Wikidata label",
+    "value": "Albert Einstein",
+    "wiki_order": "212"
+   },
+   {
+    "data_type": "wikidata_aliases",
+    "label": "Wikidata aliases",
+    "value": [
+     "Albert Einstein"
+    ],
+    "wiki_order": "213"
+   }
+  ],
+  "meta": [
+   {
+    "data_type": "string",
+    "label": "article_title",
+    "value": "Albert Einstein"
+   },
+   {
+    "data_type": "string",
+    "label": "template_name",
+    "value": "infobox scientist"
+   },
+   {
+    "data_type": "string",
+    "label": "caption",
+    "value": "Einstein in 1947"
+   },
+   {
+    "data_type": "string",
+    "label": "formatting_rules",
+    "value": "scientist"
+   }
+  ]
+ },
+ "OfficialDomain": "alberteinstein.com",
+ "OfficialWebsite": "https://alberteinstein.com",
+ "Redirect": "",
+ "RelatedTopics": [
+  {
+   "FirstURL": "https://duckduckgo.com/c/Albert_Einstein",
+   "Icon": {
+    "Height": "",
+    "URL": "",
+    "Width": ""
+   },
+   "Result": "<a href=\"https://duckduckgo.com/c/Albert_Einstein\">Albert Einstein Category</a>",
+   "Text": "Albert Einstein Category"
+  },
+  {
+   "FirstURL": "https://duckduckgo.com/Bern_Historical_Museum",
+   "Icon": {
+    "Height": "",
+    "URL": "",
+    "Width": ""
+   },
+   "Result": "<a href=\"https://duckduckgo.com/Bern_Historical_Museum\">Bern Historical Museum</a> – Einstein Museum.",
+   "Text": "Bern Historical Museum – Einstein Museum."
+  },
+  {
+   "FirstURL": "https://duckduckgo.com/History_of_gravitational_theory",
+   "Icon": {
+    "Height": "",
+    "URL": "",
+    "Width": ""
+   },
+   "Result": "<a href=\"https://duckduckgo.com/History_of_gravitational_theory\">History of gravitational theory</a> - In physics, theories of gravitation postulate mechanisms of interaction governing the movements of bodies with mass. There have been numerous theories of gravitation since ancient times. The first extant sources discussing such theories are found in ancient Greek philosophy.",
+   "Text": "History of gravitational theory - In physics, theories of gravitation postulate mechanisms of interaction governing the movements of bodies with mass. There have been numerous theories of gravitation since ancient times. The first extant sources discussing such theories are found in ancient Greek philosophy."
+  },
+  {
+   "FirstURL": "https://duckduckgo.com/c/Swiss_socialists",
+   "Icon": {
+    "Height": "",
+    "URL": "",
+    "Width": ""
+   },
+   "Result": "<a href=\"https://duckduckgo.com/c/Swiss_socialists\">Swiss socialists</a>",
+   "Text": "Swiss socialists"
+  },
+  {
+   "FirstURL": "https://duckduckgo.com/c/Einstein_family",
+   "Icon": {
+    "Height": "",
+    "URL": "",
+    "Width": ""
+   },
+   "Result": "<a href=\"https://duckduckgo.com/c/Einstein_family\">Einstein family</a>",
+   "Text": "Einstein family"
+  },
+  {
+   "FirstURL": "https://duckduckgo.com/c/People_who_lost_German_citizenship",
+   "Icon": {
+    "Height": "",
+    "URL": "",
+    "Width": ""
+   },
+   "Result": "<a href=\"https://duckduckgo.com/c/People_who_lost_German_citizenship\">People who lost German citizenship</a>",
+   "Text": "People who lost German citizenship"
+  },
+  {
+   "FirstURL": "https://duckduckgo.com/c/Patent_examiners",
+   "Icon": {
+    "Height": "",
+    "URL": "",
+    "Width": ""
+   },
+   "Result": "<a href=\"https://duckduckgo.com/c/Patent_examiners\">Patent examiners</a>",
+   "Text": "Patent examiners"
+  },
+  {
+   "FirstURL": "https://duckduckgo.com/c/German_agnostics",
+   "Icon": {
+    "Height": "",
+    "URL": "",
+    "Width": ""
+   },
+   "Result": "<a href=\"https://duckduckgo.com/c/German_agnostics\">German agnostics</a>",
+   "Text": "German agnostics"
+  },
+  {
+   "FirstURL": "https://duckduckgo.com/c/German_humanists",
+   "Icon": {
+    "Height": "",
+    "URL": "",
+    "Width": ""
+   },
+   "Result": "<a href=\"https://duckduckgo.com/c/German_humanists\">German humanists</a>",
+   "Text": "German humanists"
+  },
+  {
+   "FirstURL": "https://duckduckgo.com/c/Swiss_Nobel_laureates",
+   "Icon": {
+    "Height": "",
+    "URL": "",
+    "Width": ""
+   },
+   "Result": "<a href=\"https://duckduckgo.com/c/Swiss_Nobel_laureates\">Swiss Nobel laureates</a>",
+   "Text": "Swiss Nobel laureates"
+  },
+  {
+   "FirstURL": "https://duckduckgo.com/c/Contributors_to_the_Encyclop%C3%A6dia_Britannica",
+   "Icon": {
+    "Height": "",
+    "URL": "",
+    "Width": ""
+   },
+   "Result": "<a href=\"https://duckduckgo.com/c/Contributors_to_the_Encyclop%C3%A6dia_Britannica\">Contributors to the Encyclopædia Britannica</a>",
+   "Text": "Contributors to the Encyclopædia Britannica"
+  },
+  {
+   "FirstURL": "https://duckduckgo.com/c/Swiss_agnostics",
+   "Icon": {
+    "Height": "",
+    "URL": "",
+    "Width": ""
+   },
+   "Result": "<a href=\"https://duckduckgo.com/c/Swiss_agnostics\">Swiss agnostics</a>",
+   "Text": "Swiss agnostics"
+  },
+  {
+   "FirstURL": "https://duckduckgo.com/c/Winners_of_the_Max_Planck_Medal",
+   "Icon": {
+    "Height": "",
+    "URL": "",
+    "Width": ""
+   },
+   "Result": "<a href=\"https://duckduckgo.com/c/Winners_of_the_Max_Planck_Medal\">Winners of the Max Planck Medal</a>",
+   "Text": "Winners of the Max Planck Medal"
+  },
+  {
+   "FirstURL": "https://duckduckgo.com/c/Anti-nationalists",
+   "Icon": {
+    "Height": "",
+    "URL": "",
+    "Width": ""
+   },
+   "Result": "<a href=\"https://duckduckgo.com/c/Anti-nationalists\">Anti-nationalists</a>",
+   "Text": "Anti-nationalists"
+  },
+  {
+   "FirstURL": "https://duckduckgo.com/c/Pantheists",
+   "Icon": {
+    "Height": "",
+    "URL": "",
+    "Width": ""
+   },
+   "Result": "<a href=\"https://duckduckgo.com/c/Pantheists\">Pantheists</a>",
+   "Text": "Pantheists"
+  },
+  {
+   "FirstURL": "https://duckduckgo.com/c/German_Nobel_laureates",
+   "Icon": {
+    "Height": "",
+    "URL": "",
+    "Width": ""
+   },
+   "Result": "<a href=\"https://duckduckgo.com/c/German_Nobel_laureates\">German Nobel laureates</a>",
+   "Text": "German Nobel laureates"
+  },
+  {
+   "FirstURL": "https://duckduckgo.com/c/Naturalised_citizens_of_Switzerland",
+   "Icon": {
+    "Height": "",
+    "URL": "",
+    "Width": ""
+   },
+   "Result": "<a href=\"https://duckduckgo.com/c/Naturalised_citizens_of_Switzerland\">Naturalised citizens of Switzerland</a>",
+   "Text": "Naturalised citizens of Switzerland"
+  },
+  {
+   "FirstURL": "https://duckduckgo.com/c/Swiss_physicists",
+   "Icon": {
+    "Height": "",
+    "URL": "",
+    "Width": ""
+   },
+   "Result": "<a href=\"https://duckduckgo.com/c/Swiss_physicists\">Swiss physicists</a>",
+   "Text": "Swiss physicists"
+  },
+  {
+   "FirstURL": "https://duckduckgo.com/c/Naturalised_citizens_of_Austria",
+   "Icon": {
+    "Height": "",
+    "URL": "",
+    "Width": ""
+   },
+   "Result": "<a href=\"https://duckduckgo.com/c/Naturalised_citizens_of_Austria\">Naturalised citizens of Austria</a>",
+   "Text": "Naturalised citizens of Austria"
+  },
+  {
+   "FirstURL": "https://duckduckgo.com/c/Jewish_agnostics",
+   "Icon": {
+    "Height": "",
+    "URL": "",
+    "Width": ""
+   },
+   "Result": "<a href=\"https://duckduckgo.com/c/Jewish_agnostics\">Jewish agnostics</a>",
+   "Text": "Jewish agnostics"
+  },
+  {
+   "FirstURL": "https://duckduckgo.com/c/Institute_for_Advanced_Study_faculty",
+   "Icon": {
+    "Height": "",
+    "URL": "",
+    "Width": ""
+   },
+   "Result": "<a href=\"https://duckduckgo.com/c/Institute_for_Advanced_Study_faculty\">Institute for Advanced Study faculty</a>",
+   "Text": "Institute for Advanced Study faculty"
+  },
+  {
+   "FirstURL": "https://duckduckgo.com/c/Stateless_people",
+   "Icon": {
+    "Height": "",
+    "URL": "",
+    "Width": ""
+   },
+   "Result": "<a href=\"https://duckduckgo.com/c/Stateless_people\">Stateless people</a>",
+   "Text": "Stateless people"
+  },
+  {
+   "FirstURL": "https://duckduckgo.com/c/German_emigrants_to_Switzerland",
+   "Icon": {
+    "Height": "",
+    "URL": "",
+    "Width": ""
+   },
+   "Result": "<a href=\"https://duckduckgo.com/c/German_emigrants_to_Switzerland\">German emigrants to Switzerland</a>",
+   "Text": "German emigrants to Switzerland"
+  },
+  {
+   "FirstURL": "https://duckduckgo.com/c/German_socialists",
+   "Icon": {
+    "Height": "",
+    "URL": "",
+    "Width": ""
+   },
+   "Result": "<a href=\"https://duckduckgo.com/c/German_socialists\">German socialists</a>",
+   "Text": "German socialists"
+  },
+  {
+   "FirstURL": "https://duckduckgo.com/c/Philosophers_of_mathematics",
+   "Icon": {
+    "Height": "",
+    "URL": "",
+    "Width": ""
+   },
+   "Result": "<a href=\"https://duckduckgo.com/c/Philosophers_of_mathematics\">Philosophers of mathematics</a>",
+   "Text": "Philosophers of mathematics"
+  },
+  {
+   "FirstURL": "https://duckduckgo.com/c/American_humanists",
+   "Icon": {
+    "Height": "",
+    "URL": "",
+    "Width": ""
+   },
+   "Result": "<a href=\"https://duckduckgo.com/c/American_humanists\">American humanists</a>",
+   "Text": "American humanists"
+  },
+  {
+   "FirstURL": "https://duckduckgo.com/c/Nobel_laureates_in_Physics",
+   "Icon": {
+    "Height": "",
+    "URL": "",
+    "Width": ""
+   },
+   "Result": "<a href=\"https://duckduckgo.com/c/Nobel_laureates_in_Physics\">Nobel laureates in Physics</a>",
+   "Text": "Nobel laureates in Physics"
+  },
+  {
+   "FirstURL": "https://duckduckgo.com/c/American_pacifists",
+   "Icon": {
+    "Height": "",
+    "URL": "",
+    "Width": ""
+   },
+   "Result": "<a href=\"https://duckduckgo.com/c/American_pacifists\">American pacifists</a>",
+   "Text": "American pacifists"
+  },
+  {
+   "FirstURL": "https://duckduckgo.com/c/Swiss_emigrants_to_the_United_States",
+   "Icon": {
+    "Height": "",
+    "URL": "",
+    "Width": ""
+   },
+   "Result": "<a href=\"https://duckduckgo.com/c/Swiss_emigrants_to_the_United_States\">Swiss emigrants to the United States</a>",
+   "Text": "Swiss emigrants to the United States"
+  },
+  {
+   "FirstURL": "https://duckduckgo.com/c/American_agnostics",
+   "Icon": {
+    "Height": "",
+    "URL": "",
+    "Width": ""
+   },
+   "Result": "<a href=\"https://duckduckgo.com/c/American_agnostics\">American agnostics</a>",
+   "Text": "American agnostics"
+  },
+  {
+   "FirstURL": "https://duckduckgo.com/c/American_Nobel_laureates",
+   "Icon": {
+    "Height": "",
+    "URL": "",
+    "Width": ""
+   },
+   "Result": "<a href=\"https://duckduckgo.com/c/American_Nobel_laureates\">American Nobel laureates</a>",
+   "Text": "American Nobel laureates"
+  },
+  {
+   "FirstURL": "https://duckduckgo.com/c/University_of_Zurich_alumni",
+   "Icon": {
+    "Height": "",
+    "URL": "",
+    "Width": ""
+   },
+   "Result": "<a href=\"https://duckduckgo.com/c/University_of_Zurich_alumni\">University of Zurich alumni</a>",
+   "Text": "University of Zurich alumni"
+  },
+  {
+   "FirstURL": "https://duckduckgo.com/c/ETH_Zurich_alumni",
+   "Icon": {
+    "Height": "",
+    "URL": "",
+    "Width": ""
+   },
+   "Result": "<a href=\"https://duckduckgo.com/c/ETH_Zurich_alumni\">ETH Zurich alumni</a>",
+   "Text": "ETH Zurich alumni"
+  },
+  {
+   "FirstURL": "https://duckduckgo.com/c/American_socialists",
+   "Icon": {
+    "Height": "",
+    "URL": "",
+    "Width": ""
+   },
+   "Result": "<a href=\"https://duckduckgo.com/c/American_socialists\">American socialists</a>",
+   "Text": "American socialists"
+  },
+  {
+   "FirstURL": "https://duckduckgo.com/c/Philosophers_of_science",
+   "Icon": {
+    "Height": "",
+    "URL": "",
+    "Width": ""
+   },
+   "Result": "<a href=\"https://duckduckgo.com/c/Philosophers_of_science\">Philosophers of science</a>",
+   "Text": "Philosophers of science"
+  },
+  {
+   "FirstURL": "https://duckduckgo.com/c/Jewish_emigrants_from_Nazi_Germany_to_the_United_States",
+   "Icon": {
+    "Height": "",
+    "URL": "",
+    "Width": ""
+   },
+   "Result": "<a href=\"https://duckduckgo.com/c/Jewish_emigrants_from_Nazi_Germany_to_the_United_States\">Jewish emigrants from Nazi Germany to the United States</a>",
+   "Text": "Jewish emigrants from Nazi Germany to the United States"
+  }
+ ],
+ "Results": [
+  {
+   "FirstURL": "https://alberteinstein.com",
+   "Icon": {
+    "Height": 16,
+    "URL": "/i/alberteinstein.com.ico",
+    "Width": 16
+   },
+   "Result": "<a href=\"https://alberteinstein.com\">Official site</a><a href=\"https://alberteinstein.com\"> - Albert Einstein</a>",
+   "Text": "Official site - Albert Einstein"
+  }
+ ],
+ "Type": "A",
+ "meta": {
+  "attribution": null,
+  "blockgroup": null,
+  "created_date": null,
+  "description": "Wikipedia",
+  "designer": null,
+  "dev_date": null,
+  "dev_milestone": "live",
+  "developer": [
+   {
+    "name": "DDG Team",
+    "type": "ddg",
+    "url": "http://www.duckduckhack.com"
+   }
+  ],
+  "example_query": "nikola tesla",
+  "id": "wikipedia_fathead",
+  "is_stackexchange": null,
+  "js_callback_name": "wikipedia",
+  "live_date": null,
+  "maintainer": {
+   "github": "duckduckgo"
+  },
+  "name": "Wikipedia",
+  "perl_module": "DDG::Fathead::Wikipedia",
+  "producer": null,
+  "production_state": "online",
+  "repo": "fathead",
+  "signal_from": "wikipedia_fathead",
+  "src_domain": "en.wikipedia.org",
+  "src_id": 1,
+  "src_name": "Wikipedia",
+  "src_options": {
+   "directory": "",
+   "is_fanon": 0,
+   "is_mediawiki": 1,
+   "is_wikipedia": 1,
+   "language": "en",
+   "min_abstract_length": "20",
+   "skip_abstract": 0,
+   "skip_abstract_paren": 0,
+   "skip_end": "0",
+   "skip_icon": 0,
+   "skip_image_name": 0,
+   "skip_qr": "",
+   "source_skip": "",
+   "src_info": ""
+  },
+  "src_url": null,
+  "status": "live",
+  "tab": "About",
+  "topic": [
+   "productivity"
+  ],
+  "unsafe": 0
+ }
+}

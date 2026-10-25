@@ -1,0 +1,59 @@
+name: canary
+
+# Informational, never a required check: live queries against real keyless providers.
+# Upstream outages or exhausted per-IP caps show up here without blocking contributions.
+
+on:
+  push:
+  schedule:
+    - cron: "17 6 * * *"
+  workflow_dispatch:
+
+jobs:
+  live:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    env:
+      FAIRSERP_API_KEYS: canary-key
+      FAIRSERP_OPT_IN: firecrawl
+      FAIRSERP_SERPAPI_ENGINES: google:auto,google_maps:openstreetmap
+      FAIRSERP_PUBLIC_URL: http://localhost:8000
+    steps:
+      - uses: actions/checkout@v4
+      - name: docker compose up (live providers)
+        run: docker compose up -d --build --wait --wait-timeout 180
+      - name: engine=google via the migration alias (Firecrawl opted in, Wikidata, DDG)
+        run: |
+          curl -sS -H "Authorization: Bearer canary-key" "http://localhost:8000/search.json?engine=google&q=einstein" -o google.json
+          jq '{error, meta: .search_metadata.fairserp, organic_results: .organic_results[0:3], knowledge_graph}' google.json
+      - name: engine=wikipedia (open data, strict profile)
+        run: |
+          curl -sS -H "Authorization: Bearer canary-key" "http://localhost:8000/v1/search?q=Albert+Einstein&engine=wikipedia" | jq '{status, providers, results: .results[0:2]}'
+      - name: local results (OpenStreetMap)
+        run: |
+          curl -sS -H "Authorization: Bearer canary-key" "http://localhost:8000/search.json?engine=google_maps&q=coffee&location=Austin,+Texas" | jq '{error, meta: .search_metadata.fairserp.status, local_results: .local_results[0:3]}'
+      - if: always()
+        run: docker compose logs fairserp | tail -50; docker compose down -v
+
+  playground-ui:
+    # Clicks through the playground in headless Chrome against two live servers: the default
+    # strict profile with no keys, and one with Firecrawl opted in.
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - run: uv sync --frozen
+      - name: start a strict server and an opt-in server
+        run: |
+          FAIRSERP_AUTH_DISABLED=true uv run fairserp serve --port 8101 > strict.log 2>&1 &
+          FAIRSERP_AUTH_DISABLED=true FAIRSERP_OPT_IN=firecrawl uv run fairserp serve --port 8102 > optin.log 2>&1 &
+          for port in 8101 8102; do
+            timeout 60 bash -c "until curl -fsS http://127.0.0.1:$port/healthz > /dev/null; do sleep 1; done"
+          done
+      - run: mkdir -p ui-out && uv run python tests/e2e/playground_ui.py http://127.0.0.1:8101 http://127.0.0.1:8102 ui-out
+      - if: always()
+        run: tail -n 50 strict.log optin.log
+      # setup-uv's post step prunes the cache and waits on the lock the servers' uv processes hold.
+      - if: always()
+        run: pkill -f "fairserp serve" || true

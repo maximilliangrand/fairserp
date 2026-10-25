@@ -1,0 +1,56 @@
+{
+ "type": "search",
+ "query": {"original": "coffee", "more_results_available": true},
+ "web": {
+  "type": "search",
+  "results": [
+   {
+    "title": "Coffee - Wikipedia",
+    "url": "https://en.wikipedia.org/wiki/Coffee",
+    "description": "<strong>Coffee</strong> is a beverage brewed from roasted, ground <strong>coffee</strong> beans.",
+    "age": "3 days ago",
+    "profile": {"name": "Wikipedia", "url": "https://en.wikipedia.org/wiki/Coffee", "long_name": "en.wikipedia.org", "img": "https://imgs.search.brave.com/wiki.png"},
+    "meta_url": {"scheme": "https", "netloc": "en.wikipedia.org", "hostname": "en.wikipedia.org", "favicon": "https://imgs.search.brave.com/favicon-wiki.png", "path": "› wiki › Coffee"},
+    "deep_results": {"buttons": [{"type": "button_result", "title": "Coffee bean", "url": "https://en.wikipedia.org/wiki/Coffee_bean"}]}
+   },
+   {
+    "title": "The Nutrition Source: Coffee",
+    "url": "https://nutritionsource.hsph.harvard.edu/food-features/coffee/",
+    "description": "One 8-ounce cup of brewed coffee contains about 95 mg of caffeine.",
+    "profile": {"name": "Harvard T.H. Chan", "url": "https://nutritionsource.hsph.harvard.edu/"},
+    "meta_url": {"hostname": "nutritionsource.hsph.harvard.edu", "favicon": "https://imgs.search.brave.com/favicon-hsph.png"},
+    "thumbnail": {"src": "https://imgs.search.brave.com/thumb-coffee.jpg"}
+   }
+  ]
+ },
+ "faq": {
+  "type": "faq",
+  "results": [
+   {"question": "Is coffee good for you?", "answer": "Moderate <strong>coffee</strong> intake is linked to lower risk of several diseases.", "title": "Coffee and health", "url": "https://www.hopkinsmedicine.org/health/wellness-and-prevention/9-reasons-why-the-right-amount-of-coffee-is-good-for-you"}
+  ]
+ },
+ "infobox": {
+  "type": "graph",
+  "results": [
+   {
+    "type": "infobox", "title": "Coffee", "url": "https://en.wikipedia.org/wiki/Coffee",
+    "category": "Beverage", "long_desc": "Coffee is a beverage brewed from roasted coffee beans.",
+    "thumbnail": {"src": "https://imgs.search.brave.com/coffee-small.jpg", "original": "https://upload.wikimedia.org/coffee.jpg"},
+    "attributes": [["Type", "Hot or cold beverage"], ["Country of origin", "Yemen"]]
+   }
+  ]
+ },
+ "locations": {
+  "type": "locations",
+  "results": [
+   {
+    "id": "1bc3a0bfd6f6e1b9", "title": "Jo's Coffee", "url": "https://www.joscoffee.com/",
+    "coordinates": [30.2650127, -97.7460957],
+    "postal_address": {"displayAddress": "242 W 2nd St, Austin, TX 78701"},
+    "contact": {"telephone": "+1 512-462-9003"},
+    "rating": {"ratingValue": 4.5, "reviewCount": 812},
+    "categories": ["Coffee shop"]
+   }
+  ]
+ }
+}

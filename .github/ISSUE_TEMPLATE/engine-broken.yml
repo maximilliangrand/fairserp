@@ -1,0 +1,23 @@
+name: Engine broken
+description: An adapter returns errors or wrong results
+labels: [bug, engine]
+body:
+  - type: input
+    id: engine
+    attributes:
+      label: Engine name
+    validations:
+      required: true
+  - type: textarea
+    id: providers
+    attributes:
+      label: The providers block of the response
+      description: Paste `providers` (native API) or `search_metadata.fairserp.providers` (SerpApi endpoint). Remove keys and anything private.
+      render: json
+    validations:
+      required: true
+  - type: textarea
+    id: engines
+    attributes:
+      label: Output of GET /v1/engines for this engine
+      render: json

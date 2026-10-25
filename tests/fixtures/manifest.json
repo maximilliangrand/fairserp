@@ -1,0 +1,118 @@
+{
+ "brave_coffee.json": {
+  "engine": "brave",
+  "note": "Written from the provider's published schema; re-record with a real key (scripts/record_fixtures.py).",
+  "source": "handwritten",
+  "verified": false
+ },
+ "ddg_ia_coffee.json": {
+  "engine": "duckduckgo_ia",
+  "recorded_at": "2026-10-23",
+  "source": "recorded"
+ },
+ "ddg_ia_einstein.json": {
+  "engine": "duckduckgo_ia",
+  "recorded_at": "2026-10-23",
+  "source": "recorded"
+ },
+ "exa_coffee.json": {
+  "engine": "exa",
+  "note": "Written from the provider's published schema; re-record with a real key (scripts/record_fixtures.py).",
+  "source": "handwritten",
+  "verified": false
+ },
+ "firecrawl_coffee.json": {
+  "engine": "firecrawl",
+  "recorded_at": "2026-10-23",
+  "source": "recorded"
+ },
+ "jina_coffee.json": {
+  "engine": "jina",
+  "note": "Written from the provider's published schema; re-record with a real key (scripts/record_fixtures.py).",
+  "source": "handwritten",
+  "verified": false
+ },
+ "marginalia_coffee.json": {
+  "engine": "marginalia",
+  "recorded_at": "2026-10-23",
+  "source": "recorded"
+ },
+ "mojeek_coffee.json": {
+  "engine": "mojeek",
+  "note": "Written from the provider's published schema; re-record with a real key (scripts/record_fixtures.py).",
+  "source": "handwritten",
+  "verified": false
+ },
+ "nominatim_austin.json": {
+  "engine": "locations",
+  "recorded_at": "2026-10-23",
+  "source": "recorded"
+ },
+ "openstreetmap_coffee.json": {
+  "engine": "openstreetmap",
+  "query": {
+   "location": "Austin, Texas",
+   "q": "coffee",
+   "vertical": "local"
+  },
+  "recorded_at": "2026-10-23",
+  "source": "recorded"
+ },
+ "openstreetmap_pizza.json": {
+  "engine": "openstreetmap",
+  "query": {
+   "location": "Brooklyn, New York",
+   "q": "pizza",
+   "vertical": "local"
+  },
+  "recorded_at": "2026-10-23",
+  "source": "recorded"
+ },
+ "parallel_coffee.json": {
+  "engine": "parallel",
+  "note": "Written from the provider's published schema; re-record with a real key (scripts/record_fixtures.py).",
+  "source": "handwritten",
+  "verified": false
+ },
+ "searxng_coffee.json": {
+  "engine": "searxng",
+  "note": "Written from the provider's published schema; re-record with a real key (scripts/record_fixtures.py).",
+  "source": "handwritten",
+  "verified": false
+ },
+ "tavily_coffee.json": {
+  "engine": "tavily",
+  "note": "Written from the provider's published schema; re-record with a real key (scripts/record_fixtures.py).",
+  "source": "handwritten",
+  "verified": false
+ },
+ "wikidata_best_laptops_2026_reviews_for_students.json": {
+  "engine": "wikidata",
+  "query": {
+   "q": "best laptops 2026 reviews for students"
+  },
+  "recorded_at": "2026-10-23",
+  "source": "recorded"
+ },
+ "wikidata_coffee.json": {
+  "engine": "wikidata",
+  "query": {
+   "q": "coffee"
+  },
+  "recorded_at": "2026-10-23",
+  "source": "recorded"
+ },
+ "wikidata_einstein.json": {
+  "engine": "wikidata",
+  "query": {
+   "q": "einstein"
+  },
+  "recorded_at": "2026-10-23",
+  "source": "recorded"
+ },
+ "wikipedia_search_einstein.json": {
+  "engine": "wikipedia",
+  "recorded_at": "2026-10-23",
+  "source": "recorded"
+ }
+}
