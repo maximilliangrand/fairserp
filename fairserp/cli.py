@@ -22,6 +22,7 @@ def serve(args: argparse.Namespace) -> None:
         os.environ["FAIRSERP_AUTH_DISABLED"] = "true"
         print(f"fairserp: no FAIRSERP_API_KEYS set; auth is off because the server only "
               f"listens on {args.host}.", file=sys.stderr)
+    print(f"fairserp: playground at http://{args.host}:{args.port}/", file=sys.stderr)
     uvicorn.run("fairserp.main:app", host=args.host, port=args.port, proxy_headers=True)
 
 

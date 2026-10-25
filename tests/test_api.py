@@ -140,6 +140,16 @@ def test_pagination_links_are_unique_and_honest():
     assert "next" not in data["serpapi_pagination"]
 
 
+def test_startup_warns_when_auto_has_no_web_provider(caplog):
+    with caplog.at_level(logging.WARNING, logger="fairserp"), client(stubs.organic("a")):
+        pass
+    assert "no web search provider" not in caplog.text
+    with caplog.at_level(logging.WARNING, logger="fairserp"), \
+            client(stubs.organic("a"), organic_priority="missing"):
+        pass
+    assert "no web search provider is enabled" in caplog.text
+
+
 def test_self_links_use_the_request_host_when_public_url_is_unset():
     with client(stubs.organic("a"), public_url=None) as c:
         data = c.get("/search.json", params={"q": "x"}, headers=AUTH).json()
