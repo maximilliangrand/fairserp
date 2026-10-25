@@ -6,11 +6,13 @@ This is the only place a caller-supplied URL is fetched, so it carries the SSRF 
   multicast, reserved or unspecified ranges); the request is pinned to the checked address
   so a second DNS answer cannot rebind it to an internal host;
 - redirects are followed by hand, at most three, and each hop is checked again;
-- response size, time and content type are capped.
+- response size, time and content type are capped, the whole fetch has one deadline, and
+  only a bounded number of fetches run at once.
 
 It also respects robots.txt (RFC 9309): a disallowed path is refused, an unreachable or
-5xx robots.txt counts as a full disallow, a 4xx counts as allow. It never retries around a
-block and does not evade bot protection.
+5xx robots.txt counts as a full disallow, a 4xx counts as allow. Redirects for robots.txt
+are followed up to five hops, each checked like a page hop; more counts as unreachable.
+It never retries around a block and does not evade bot protection.
 """
 
 import asyncio
@@ -31,12 +33,26 @@ from fairserp.robots import Robots
 from fairserp.store import Store
 
 MAX_REDIRECTS = 3
+ROBOTS_MAX_REDIRECTS = 5
+MAX_CONCURRENT_FETCHES = 16
+# http_timeout_seconds bounds each read, not a whole fetch, so a server sending a byte every
+# few seconds could hold one open indefinitely. A fetch makes several requests (robots.txt,
+# redirect hops, the page), so the overall deadline is this multiple of the per-request one.
+DEADLINE_MULTIPLE = 3
 MAX_BYTES = 2_000_000
 ROBOTS_MAX_BYTES = 512_000
 ROBOTS_TTL = 3600
 ALLOWED_TYPES = ("text/html", "application/xhtml+xml", "text/plain")
 ROBOTS_TOKEN = "fairserp"
+_REDIRECTS = (301, 302, 303, 307, 308)
 _CGNAT = ipaddress.ip_network("100.64.0.0/10")
+# IPv6 forms that carry an IPv4 address in their low 32 bits: the well-known NAT64 prefix
+# (RFC 6052) and the deprecated IPv4-compatible range. The embedded address is what a
+# translator or dual stack actually reaches, so it is checked instead.
+_EMBEDS_IPV4 = (ipaddress.ip_network("64:ff9b::/96"), ipaddress.ip_network("::/96"))
+# Local-use NAT64 (RFC 8215, where the operator picks where the IPv4 sits, so it cannot be
+# read back reliably) and deprecated site-local addresses are never public.
+_NEVER_PUBLIC = (ipaddress.ip_network("64:ff9b:1::/48"), ipaddress.ip_network("fec0::/10"))
 
 
 class FetchError(Exception):
@@ -66,8 +82,13 @@ class Evidence:
 
 def is_public(address: str) -> bool:
     ip = ipaddress.ip_address(address)
-    if isinstance(ip, ipaddress.IPv6Address) and ip.ipv4_mapped:
-        ip = ip.ipv4_mapped
+    if isinstance(ip, ipaddress.IPv6Address):
+        if ip.ipv4_mapped:
+            ip = ip.ipv4_mapped
+        elif any(ip in network for network in _NEVER_PUBLIC):
+            return False
+        elif any(ip in network for network in _EMBEDS_IPV4):
+            ip = ipaddress.IPv4Address(int(ip) & 0xFFFFFFFF)
     return ip.is_global and not ip.is_multicast and ip not in _CGNAT
 
 
@@ -77,6 +98,8 @@ class Fetcher:
         self._settings = settings
         self._cache = cache
         self._resolver = resolver or _resolve
+        self._slots = asyncio.Semaphore(MAX_CONCURRENT_FETCHES)
+        self._deadline = settings.http_timeout_seconds * DEADLINE_MULTIPLE
         self._client = httpx.AsyncClient(
             timeout=settings.http_timeout_seconds, follow_redirects=False, trust_env=False,
             headers={"User-Agent": settings.user_agent,
@@ -87,13 +110,23 @@ class Fetcher:
         await self._client.aclose()
 
     async def fetch(self, url: str, query: str = "") -> Evidence:
+        # Waiting for a free slot counts against the deadline, so a backlog sheds load
+        # instead of queueing callers forever.
+        try:
+            async with asyncio.timeout(self._deadline):
+                async with self._slots:
+                    return await self._fetch(url, query)
+        except TimeoutError as exc:
+            raise FetchError(f"the fetch took longer than {self._deadline:g}s", 504) from exc
+
+    async def _fetch(self, url: str, query: str) -> Evidence:
         redirects: list[str] = []
         current = url
         for _ in range(MAX_REDIRECTS + 1):
             target = await self._check(current)
             await self._check_robots(current)
             response, body = await self._get(current, target)
-            if response.status_code in (301, 302, 303, 307, 308):
+            if response.status_code in _REDIRECTS:
                 location = response.headers.get("location")
                 if not location:
                     raise FetchError("redirect without a Location header", 502)
@@ -102,7 +135,7 @@ class Fetcher:
                 continue
             if response.status_code >= 400:
                 raise FetchError(f"the page answered HTTP {response.status_code}", 502)
-            return self._evidence(url, current, response, body, query, redirects)
+            return await self._evidence(url, current, response, body, query, redirects)
         raise FetchError(f"more than {MAX_REDIRECTS} redirects", 502)
 
     async def _check(self, url: str) -> str:
@@ -111,7 +144,10 @@ class Fetcher:
             raise FetchError("only http and https URLs can be fetched")
         if parts.username or parts.password:
             raise FetchError("URLs with credentials are not fetched")
-        port = parts.port or (443 if parts.scheme == "https" else 80)
+        try:
+            port = parts.port or (443 if parts.scheme == "https" else 80)
+        except ValueError as exc:
+            raise FetchError("the URL has an invalid port") from exc
         if port not in (80, 443):
             raise FetchError("only ports 80 and 443 can be fetched")
         try:
@@ -146,7 +182,7 @@ class Fetcher:
         except httpx.HTTPError as exc:
             raise FetchError(f"could not connect: {type(exc).__name__}", 502) from exc
         try:
-            if response.status_code in (301, 302, 303, 307, 308) or response.status_code >= 400:
+            if response.status_code in _REDIRECTS or response.status_code >= 400:
                 return response, b""
             kind = response.headers.get("content-type", "").split(";")[0].strip().lower()
             if kind and kind not in ALLOWED_TYPES:
@@ -181,23 +217,36 @@ class Fetcher:
                 if cached.get("unreachable"):
                     return None
         if text is None:
-            robots_url = f"{origin}/robots.txt"
-            try:
-                address = await self._check(robots_url)
-                response, body = await self._get_robots(robots_url, address)
-            except FetchError:
-                return await self._remember(key, None)
-            if response.status_code >= 500:
-                return await self._remember(key, None)
-            text = "" if response.status_code >= 400 else body.decode("utf-8", "replace")
-            await self._remember(key, text)
+            text = await self._download_robots(f"{origin}/robots.txt")
+            return await self._remember(key, text)
         return Robots(text)
+
+    async def _download_robots(self, url: str) -> str | None:
+        """The robots.txt text, "" when it is unavailable (4xx, allow all) and None when it
+        is unreachable (5xx, network error, a refused or missing redirect target, or more
+        than ROBOTS_MAX_REDIRECTS hops), which RFC 9309 treats as a full disallow."""
+        for _ in range(ROBOTS_MAX_REDIRECTS + 1):
+            try:
+                address = await self._check(url)
+                response, body = await self._get_robots(url, address)
+            except FetchError:
+                return None
+            if response.status_code in _REDIRECTS:
+                location = response.headers.get("location")
+                if not location:
+                    return None
+                url = urljoin(url, location)
+                continue
+            if response.status_code >= 500:
+                return None
+            return "" if response.status_code >= 400 else body.decode("utf-8", "replace")
+        return None
 
     async def _get_robots(self, url: str, address: str) -> tuple[httpx.Response, bytes]:
         parts = urlsplit(url)
         host = f"[{address}]" if ":" in address else address
         pinned = urlunsplit((parts.scheme, host if parts.port is None else
-                             f"{host}:{parts.port}", parts.path, "", ""))
+                             f"{host}:{parts.port}", parts.path or "/", parts.query, ""))
         extensions = {"sni_hostname": parts.hostname} if parts.scheme == "https" else {}
         request = self._client.build_request("GET", pinned, headers={"Host": parts.netloc},
                                              extensions=extensions)
@@ -206,6 +255,8 @@ class Fetcher:
         except httpx.HTTPError as exc:
             raise FetchError("robots.txt unreachable", 502) from exc
         try:
+            if response.status_code in _REDIRECTS:
+                return response, b""
             body = bytearray()
             async for chunk in response.aiter_bytes():
                 body += chunk
@@ -221,14 +272,15 @@ class Fetcher:
             await self._cache.set_json(key, value, ROBOTS_TTL)
         return None if text is None else Robots(text)
 
-    def _evidence(self, url: str, final: str, response: httpx.Response, body: bytes,
-                  query: str, redirects: list[str]) -> Evidence:
+    async def _evidence(self, url: str, final: str, response: httpx.Response, body: bytes,
+                        query: str, redirects: list[str]) -> Evidence:
         kind = response.headers.get("content-type", "text/html").split(";")[0].strip()
         text = body.decode(response.encoding or "utf-8", "replace")
         if kind == "text/plain":
             page = Page(title="", text=text, published=None, updated=None)
         else:
-            page = extract(text)
+            # A 2 MB parse would stall every other request on the event loop.
+            page = await asyncio.to_thread(extract, text)
         chosen = passages(page.text, query, limit=5, max_chars=400) if query else \
             passages(page.text, page.title, limit=3, max_chars=400)
         return Evidence(
