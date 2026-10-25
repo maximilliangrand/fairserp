@@ -26,6 +26,7 @@ logger = logging.getLogger("fairserp")
 _UNREACHABLE = (RedisConnectionError, RedisTimeoutError, OSError)
 REDIS_SOCKET_TIMEOUT_SECONDS = 2.0
 WARNING_INTERVAL_SECONDS = 30.0
+DOWN_COOLDOWN_SECONDS = 5.0
 # The in-memory store drops expired entries every this many writes.
 SWEEP_EVERY_WRITES = 256
 
@@ -38,7 +39,10 @@ class StoreUnavailable(Exception):
 class Store(Protocol):
     async def get_json(self, key: str) -> Any | None: ...
 
-    async def set_json(self, key: str, value: Any, ttl: float) -> None: ...
+    async def set_json(self, key: str, value: Any, ttl: float, *,
+                       required: bool = False) -> None:
+        """required: raise StoreUnavailable rather than fail open (archive and job records,
+        whose loss would leave a caller polling for something never written)."""
 
     async def delete(self, key: str) -> None: ...
 
@@ -116,7 +120,8 @@ class MemoryStore:
         value = self._live(key)
         return None if value is None else json.loads(value)
 
-    async def set_json(self, key: str, value: Any, ttl: float) -> None:
+    async def set_json(self, key: str, value: Any, ttl: float, *,
+                       required: bool = False) -> None:
         if ttl <= 0:
             self._data.pop(key, None)
             return
@@ -193,21 +198,35 @@ class RedisStore:
         self._redis = client
         self._fail_open = fail_open
         self._last_warning = float("-inf")
+        # After a failure, a fail-open store skips Redis for a short cooldown, so a Redis that
+        # hangs instead of refusing costs one socket timeout, not one per cache call.
+        self._down_until = float("-inf")
+
+    def _cooling_down(self, required: bool = False) -> bool:
+        if not self._fail_open or time.monotonic() >= self._down_until:
+            return False
+        if required:
+            raise StoreUnavailable("Redis store unreachable (cooling down after a failure)")
+        return True
 
     def _unavailable(self, error: Exception) -> NoReturn:
         raise StoreUnavailable(f"Redis store unreachable: {type(error).__name__}") from error
 
-    def _skip(self, error: Exception) -> None:
-        """Fail open for a cache operation, or raise when this store must not."""
-        if not self._fail_open:
-            self._unavailable(error)
+    def _skip(self, error: Exception, required: bool = False) -> None:
+        """Fail open for a cache operation, or raise when this store or write must not."""
         now = time.monotonic()
+        if self._fail_open:
+            self._down_until = now + DOWN_COOLDOWN_SECONDS
+        if not self._fail_open or required:
+            self._unavailable(error)
         if now - self._last_warning >= WARNING_INTERVAL_SECONDS:
             self._last_warning = now
             logger.warning("cache store unreachable (%s); serving without cache",
                            type(error).__name__)
 
     async def get_json(self, key: str) -> Any | None:
+        if self._cooling_down():
+            return None
         try:
             value = await self._redis.get(key)
         except _UNREACHABLE as error:
@@ -215,16 +234,21 @@ class RedisStore:
             return None
         return None if value is None else json.loads(value)
 
-    async def set_json(self, key: str, value: Any, ttl: float) -> None:
+    async def set_json(self, key: str, value: Any, ttl: float, *,
+                       required: bool = False) -> None:
+        if self._cooling_down(required):
+            return
         try:
             if ttl <= 0:
                 await self._redis.delete(key)
                 return
             await self._redis.set(key, json.dumps(value), px=max(1, int(ttl * 1000)))
         except _UNREACHABLE as error:
-            self._skip(error)
+            self._skip(error, required)
 
     async def delete(self, key: str) -> None:
+        if self._cooling_down():
+            return
         try:
             await self._redis.delete(key)
         except _UNREACHABLE as error:
