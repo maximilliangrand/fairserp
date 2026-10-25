@@ -205,6 +205,10 @@ async def main():
             check("opt-in server: results or a limit panel with a retry time",
                   results_n > 0 or ("resets in" in panel), panel[:120] or results_n)
 
+            await page.js("document.querySelector('[data-copy=\"mcp\"]').click()")
+            check("opt-in server's MCP snippet carries its opt-in",
+                  await page.until("document.getElementById('snippet').textContent.includes('\"FAIRSERP_OPT_IN\": \"firecrawl\"')", 3))
+
             # Console errors and CSP violations across the whole run.
             problems = [e["params"] for e in page.events
                         if e.get("method") in ("Runtime.exceptionThrown",)
