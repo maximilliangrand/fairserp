@@ -27,6 +27,4 @@ of scope permanently (see CONTRIBUTING.md).
 
 ## Decisions pending with the owner
 
-- License: AGPL-3.0 today; both external reviews recommend Apache-2.0.
-- Project name and whether to make the repository and image public.
 - Which paid provider keys, if any, to fund for production use.
