@@ -1,7 +1,7 @@
 name: release
 
 # Tags like v0.2.0 publish a versioned container image to GHCR and a GitHub release with
-# the wheel and sdist. The image's visibility follows the repository's (private today).
+# the wheel and sdist. The image's visibility follows the repository's (public).
 
 on:
   push:

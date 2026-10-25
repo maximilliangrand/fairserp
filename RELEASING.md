@@ -33,5 +33,5 @@ Exceptions, which may change in any release with a note:
    and `sha-…` tags) and a GitHub release with the wheel and sdist. A tag with a suffix such
    as `v0.3.0-rc.1` is published as a prerelease.
 
-Publishing to PyPI or npm, and making the repository or image public, are owner decisions
-and not automated.
+Publishing to PyPI or npm is an owner decision and not automated. A new GHCR package
+starts private; make it public once in the package settings on GitHub.
