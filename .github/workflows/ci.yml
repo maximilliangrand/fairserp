@@ -75,7 +75,7 @@ jobs:
           docker compose exec -T redis-state redis-cli --scan --pattern 'usage:*' | tee keys.txt; test -s keys.txt
           test -z "$(docker compose exec -T redis-cache redis-cli --scan --pattern 'usage:*')"
           test "$(curl -s -o /dev/null -w '%{http_code}' 'http://localhost:8000/search.json?q=x&api_key=wrong')" = 401
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: e2e-responses
